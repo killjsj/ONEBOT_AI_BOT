@@ -23,6 +23,7 @@ model = ''
 Gmodel_maxtokens = 1000
 Gmodel = '' 
 Gmodel_login_token = ''
+lang = ''
 ```
 aikey=open ai api key  
 fht = 和风天气api key waiting for rewrite  
@@ -35,6 +36,7 @@ model = openai model choose
 Gmodel_maxtokens = On local model/online model max Token  
 Gmodel = hugging face model url    
 Gmodel_login_token = 'hf_?' if model need your login token,input there  
+lang = languange(->[`lang`](lang)+`\prompt`+lang+`.txt` like:lang\prompt_zh.txt) only support prompt now  
 ## program: 
 ### ai draw: 
 open [ai.py](ai.py)  
