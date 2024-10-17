@@ -5,7 +5,7 @@ import requests
 load_dotenv()
 fht = os.getenv("fht")
 
-def wea(Loc,adm):
+def wea(Loc,adm,lang='zh'):
     # df = pd.read_csv('China-City-List-latest.csv', header=1, encoding='utf-8')
     # filtered_df = df[(df['Location_Name_ZH'].str.contains(Loc)) &
     #                 ((df['Adm1_Name_ZH'].str.contains(adm)) | (df['Adm2_Name_ZH'].str.contains(adm)))]
@@ -18,7 +18,7 @@ def wea(Loc,adm):
         for location in geo["location"]:
             if location["name"] == Loc and (location["adm2"] == adm or location["adm1"] == adm):
                 location_ids = location["id"]
-        re = requests.get("https://devapi.qweather.com/v7/weather/now",params={"location":location_ids,"key":fht,"lang":"zh"})
+        re = requests.get("https://devapi.qweather.com/v7/weather/now",params={"location":location_ids,"key":fht,"lang":lang})
     except requests.exceptions.ConnectionError:
         return 500
     if re.json().get("code") != "200":

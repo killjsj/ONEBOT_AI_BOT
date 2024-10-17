@@ -11,6 +11,7 @@ allow_draw = False
 load_dotenv()
 aikey = os.getenv("aikey")
 url = os.getenv("aiurl")
+lang = os.getenv("lang")
 model = os.getenv("model")
 client = OpenAI(
     api_key = aikey, 
@@ -148,7 +149,7 @@ def weather(arguments: Dict[str, Any]) -> Any:
     adm1 = arguments["adm1"]
     adm2 = arguments["adm2"]
     print(adm1 +"+"+ adm2)
-    result = tools.wea(adm1,adm2)
+    result = tools.wea(adm1,adm2,lang)
     return {"result": result}
 
 def gtime(arguments: Dict[str, Any]) :

@@ -31,7 +31,7 @@ else:
 load_dotenv()  # tools demo(you can just use this)
 maxtoken = int(os.getenv("Gmodel_maxtokens"))
 model_name = "DiTy/gemma-2-9b-it-function-calling-GGUF"  # os.getenv("Gmodel")
-
+lang = os.getenv("lang")
 cache_dir = "./model_cache"
 pipe = None
 tokenizer = None
@@ -46,7 +46,7 @@ def weather(adm1: str, adm2: str) -> Any:
         adm2: The province (e.g., Chongqing, Shenzhen, etc.).
     """
     print(adm1 + "+" + adm2)
-    result = tools.wea(adm1, adm2)  # Assuming 'tools.wea' is a function that fetches weather data
+    result = tools.wea(adm1, adm2,lang)  # Assuming 'tools.wea' is a function that fetches weather data
     return {"result": result}
 
 def gtime() -> str:

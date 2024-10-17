@@ -7,18 +7,17 @@ import torch
 from bitsandbytes import *
 from transformers import pipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer,BitsAndBytesConfig
-import imp
 import tools # support amd/intel gpu
-try:
-    imp.find_module('torch_directml')
-    found_directml = True
-    import torch_directml # type: ignore
-except ImportError:
-    found_directml = False
+import importlib
+
+spec = importlib.util.find_spec('torch_directml')
+found_directml = spec is not None
 if found_directml:
-    device=torch_directml.device()
+    import torch_directml  # type: ignore
+    device = torch_directml.device()
 else:
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  #!=cuda support
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # !=cuda support
+
 
 
 allow_ai_use_tools = False #!!! WRITE BY YOU !!!!
@@ -27,8 +26,8 @@ allow_draw = False
 
 load_dotenv()#no tools because i dont know how to write:(
 maxtoken = int(os.getenv("Gmodel_maxtokens"))
-model_name = "meta-llama/Llama-3.2-11B-Vision-Instruct"#os.getenv("Gmodel")
-
+model_name = os.getenv("Gmodel")
+lang = os.getenv("lang")
 cache_dir="./model_cache"
 pipe = None
 tokenizer= None
@@ -162,7 +161,7 @@ if not(allow_ai_use_tools):
 
 def weather(adm1:str,adm2:str) -> Any:
     print(adm1 +"+"+ adm2)
-    result = tools.wea(adm1,adm2)
+    result = tools.wea(adm1,adm2,lang)
     return {"result": result}
 
 def gtime(arguments: Dict[str, Any]) :

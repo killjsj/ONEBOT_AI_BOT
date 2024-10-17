@@ -1,4 +1,3 @@
-THIS IS REUPDATED BECAUSE I DEL MY ACC:(  
 # ONEBOT_AI_BOT  
 using ONEBOT V11   
 using hires-fix(https://github.com/xinntao/Real-ESRGAN)  
@@ -36,7 +35,7 @@ model = openai model choose
 Gmodel_maxtokens = On local model/online model max Token  
 Gmodel = hugging face model url    
 Gmodel_login_token = 'hf_?' if model need your login token,input there  
-lang = languange(->[`lang`](lang)+`\prompt_`+lang+`.txt` like:lang\prompt_zh.txt) only support prompt now  
+lang = languange support weather(unfin) prompt(->[`lang`](lang)+`\prompt_`+lang+`.txt` like:lang\prompt_zh.txt)
 ## program: 
 ### ai draw: 
 open [ai.py](ai.py)  
@@ -95,4 +94,4 @@ paste this in to '"servers": []'
 }]
 ```
 like be:![a](image-6.png)  
-todo:more lang supports
+todo:more lang supports,wea rewrite
