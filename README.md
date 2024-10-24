@@ -9,7 +9,8 @@ run:install.ps1
 run:python main.py  
 startuping  
 ## commands:  
-cx or /server:get servers online players(btw cx means '查询',inquire in chinese)
+`cx` or `/server`:get servers online players(btw cx means '查询',inquire in chinese)
+`/ai `:run ai chat
 # config:  
 ## .env:
 open [.env ](.env) ![.env](image-6.png)  
