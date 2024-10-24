@@ -2,6 +2,7 @@ re = 0
 from bs4 import BeautifulSoup as bs
 import requests
 def getslserver(pb) -> dict:
+    print(pb)
     global re
     try:
         sl = requests.get("https://kigen.co/scpsl/browser.php",{"table":"y"})
@@ -14,6 +15,7 @@ def getslserver(pb) -> dict:
             for cell in row.find_all('td'):
                 row_data.append(cell.text.strip()) 
             col.append(row_data)  
+        print(col)
         column_indices = []
         printed_rows = set()
         for now in pb:
@@ -35,8 +37,10 @@ def getslserver(pb) -> dict:
                                     printed_rows.add(row_tuple)
             
             else:
-                print("服务器死了 好似")
-                return "404"
+                continue
+        if printed_rows == set():
+            print("服务器死了 好似")
+            return "404"
         return printed_rows
     except:
         if re == 0:
@@ -45,4 +49,3 @@ def getslserver(pb) -> dict:
         else:
             re = 0
             return "500"
-# print(getslserver(["Q6u5vvmP","YyMi7aUL"]))
