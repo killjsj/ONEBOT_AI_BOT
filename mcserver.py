@@ -14,7 +14,7 @@ def get_java_server_info(address, port,lang='en'):
    temp_text = ""
    tcp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
    try:
-       tcp_client.connect((temp_ip, port))
+       tcp_client.connect((temp_ip, int(port)))
        tcp_client.sendall(b'\xfe\x01')
        data = tcp_client.recv(1024)
        if data:
