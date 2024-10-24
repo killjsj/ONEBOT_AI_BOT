@@ -44,16 +44,16 @@ def get_java_server_info(address, port,lang='en'):
                     return "不兼容"
        else:
         if lang == 'en':
-                return "server offline"
+                return "server "+ address + " offline"
         elif lang == 'zh':
-            return "服务器没了"
+            return "服务器 "+ address + " 没了"
            
    except socket.error as e:
        if e.errno == 111:
            if lang == 'en':
-               return "server offline"
+               return "server "+ address + " offline"
            elif lang == 'zh':
-               return "服务器没了"
+               return "服务器"+ address + "没了"
        return f"connect error: {e}"
    finally:
        tcp_client.close()
