@@ -38,9 +38,16 @@ def get_java_server_info(address, port,lang='en'):
                    temp_text += "\ndata format warn"
                return temp_text
            else:
-               return "not compatible for this server"
+               if lang == 'en':
+                return "not compatible for server"
+               elif lang == 'zh':
+                    return "不兼容"
        else:
-           return "server offline"
+        if lang == 'en':
+                return "server offline"
+        elif lang == 'zh':
+            return "服务器没了"
+           
    except socket.error as e:
        return f"connect error: {e}"
    finally:
