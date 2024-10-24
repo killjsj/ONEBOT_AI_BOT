@@ -1,0 +1,9 @@
+python-dotenv
+openai==1.45.1
+regex
+requests==2.32.3
+numpy==1.26.4
+bs4
+pandas
+opencv-python
+tqdm

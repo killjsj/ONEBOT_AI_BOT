@@ -45,3 +45,4 @@ def getslserver(pb) -> dict:
         else:
             re = 0
             return "500"
+# print(getslserver(["Q6u5vvmP","YyMi7aUL"]))

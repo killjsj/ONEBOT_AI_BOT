@@ -1,5 +1,6 @@
 # ONEBOT_AI_BOT  
 using ONEBOT V11   
+using MC-Server-Info(https://github.com/Spark-Code-China/MC-Server-Info/)  
 using hires-fix(https://github.com/xinntao/Real-ESRGAN)  
 # ---- How to use ---  
 run:git clone https://github.com/1qa2ws3ed4rf1/SL_QQ_BOT.git  
@@ -7,6 +8,8 @@ open .env and goto '.env' part [click here](##-.env:)
 run:install.ps1  
 run:python main.py  
 startuping  
+## commands:  
+cx or /server:get servers online players(btw cx means '查询',inquire in chinese)
 # config:  
 ## .env:
 open [.env ](.env) ![.env](image-6.png)  
@@ -23,6 +26,10 @@ Gmodel_maxtokens = 1000
 Gmodel = '' 
 Gmodel_login_token = ''
 lang = ''
+cx_mc = ["0","0"]
+mc_ip = ''
+mc_port = ''
+sl_pb = ["YyMi7aUL","Q6u5vvmP"]
 ```
 aikey=open ai api key  
 fht = 和风天气api key waiting for rewrite  
@@ -35,7 +42,9 @@ model = openai model choose
 Gmodel_maxtokens = On local model/online model max Token  
 Gmodel = hugging face model url    
 Gmodel_login_token = 'hf_?' if model need your login token,input there  
-lang = languange support weather(unfin) prompt(->[`lang`](lang)+`\prompt_`+lang+`.txt` like:lang\prompt_zh.txt)
+lang = languange support weather(unfin) prompt(->[`lang`](lang)+`\prompt_`+lang+`.txt` like:lang\prompt_zh.txt)  
+cx_mc = group of using MC-Server-Info(not sl server) write like `["group1","group2"]`  
+sl_pb = your pastebin of sl server write like `["pb1","pb2"]` (btw 'YyMi7aUL','Q6u5vvmP' is my favorite sl server:)  
 ## program: 
 ### ai draw: 
 open [ai.py](ai.py)  

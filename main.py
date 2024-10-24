@@ -7,6 +7,7 @@ import re
 from ai import chat
 import slget
 import time
+import mcserver
 import requests
 import os
 import random
@@ -21,12 +22,18 @@ global uset
 n = 0
 c = 0
 uset = 0
+support = ['zh','en']
 aikey = os.getenv("aikey")
 fip = os.getenv("fip")
 tip = os.getenv("tip")
 tport = os.getenv("tport")
 fport = os.getenv("fport")
 lang = os.getenv("lang")
+print(os.getenv("cx_mc"))
+mc = json.loads(os.getenv("cx_mc"))
+mc_ip = os.getenv("mc_ip")
+mc_port = os.getenv("mc_port")
+sl_pb = json.loads(os.getenv("sl_pb"))
 HttpResponseHeader = '''HTTP/1.1 200 OK\r\n
 Content-Type: text/html\r\n\r\n
 '''
@@ -51,10 +58,15 @@ def readprompt(file_from:str,target_i:int = 0):
             if a[:3+len(str(target_i))] == target:
                 check_p1 = True
         return readprompt(file_from,0)
-    
+def lang_check(lang):
+    if lang in support:
+        print('lang check pass')
+        return 0 # bruh
+    else:
+        raise Exception('Not support lang:' + lang)
 mode = 0
 start_messages = []
-langprom = 'lang\prompt_' + lang + '.txt'
+langprom = 'lang\\prompt_' + lang + '.txt'
 messages = start_messages
 request_queue = queue.Queue()
 file_content_dict = {}
@@ -109,19 +121,19 @@ def send_msg(resp_dict):
     msg_type = resp_dict['msg_type']  
     number = resp_dict['number'] 
     msg = resp_dict['msg'] 
-    tip = tip + ":" + str(tport)
+    ttip = tip + ":" + str(tport)
     if msg_type == 'group':
         payl0 = {"message_type":msg_type,"group_id":number,"message":msg}
-        print("sent" + payl0.__str__())
+        print("sent " + payl0.__str__())
         print(msg)
-        response = requests.post(tip+"/send_msg", json=payl0)
+        response = requests.post(ttip+"/send_msg", json=payl0)
         print(response.text)
         print(response.status_code)
     elif msg_type == 'private':
         payl0 = {"message_type":msg_type,"user_id":number,"message":msg}
-        print("sent" + payl0)
+        print("sent " + payl0)
         print(msg)
-        response = requests.post(tip+"/send_msg", json=payl0)
+        response = requests.post(ttip+"/send_msg", json=payl0)
         print(response.text)
         print(response.status_code)
     return 0
@@ -173,25 +185,42 @@ def run_group(rev):
                                 
                                 threadc = threading.Thread(target=runchat,args=(uset,qqg,))
                                 threadc.start()      
-                            if '/slserver' in rev['raw_message'] or rev['raw_message'].lower() == "cx" or ( "CQ:at,qq=3146948580" in rev["raw_message"] and "cx" in rev['raw_message'].lower()) or ( "CQ:at,qq=1493984747" in rev["raw_message"] and "cx" in rev['raw_message'].lower())  or ( "CQ:at,qq=2274383937" in rev["raw_message"] and "cx" in rev['raw_message'].lower()) or ( "CQ:at,qq=1020120106" in rev["raw_message"] and "cx" in rev['raw_message'].lower()):
-                                server = slget.getslserver(["Q6u5vvmP","YyMi7aUL"]) #你服务器pastebin AND WAITING FOR REWRITE
-                                ms = ""
-                                if server != "404":
-                                    for no in server:
-                                        def remove_html_tags(text):
-                                            clean_text = re.sub(r'(?i)<[^>]+>', '', text)
-                                            return clean_text
-                                        no = [remove_html_tags(item) for item in no]
-                                        ms = ms + no[3] + " 玩家数:" + no[5] +"\n"
-                                elif server == "500":
-                                    ms = "内部错误 可能机器人网络问题 请稍后重试"
+                            if '/server' in rev['raw_message'] or rev['raw_message'].lower() == "cx":
+                                print(mc)
+                                if str(qqg) in mc:
+                                    ms = mcserver.get_java_server_info(mc_ip,mc_port,lang)
+                                    send_msg({'msg_type':"group",'number':qqg,'msg':ms})
                                 else:
-                                    ms = "服务器没了 可能没搜到或者机器人网络问题"
+                                    server = slget.getslserver(sl_pb) #sl pastebin AND WAITING FOR REWRITE
+                                    ms = ""
+                                    if server != "404":
+                                        for no in server:
+                                            def remove_html_tags(text):
+                                                clean_text = re.sub(r'(?i)<[^>]+>', '', text)
+                                                return clean_text
+                                            no = [remove_html_tags(item) for item in no]
+                                            if lang == 'zh':
+                                                ms = ms + no[3] + " 玩家数:" + no[5] +' ip:'+no[0]+"\n"
+                                            elif lang == 'en':
+                                                 ms = ms + no[3] + " players:" + no[5] +' ip:'+no[0] +"\n"
+                                    elif server == "500":
+                                        if lang == 'zh':
+                                            ms = "内部错误 可能机器人网络问题 请稍后重试"
+                                        elif lang == 'en':
+                                            ms = "500 Interal error sorry:("
+                                    elif server == "404":
+                                        if lang == 'zh':
+                                            ms = "服务器没了 可能没搜到或者机器人网络问题"
+                                        elif lang == 'en':
+                                            ms = "404 server offline:("
+                                    else:
+                                        ms = server
+                                    send_msg({'msg_type':"group",'number':qqg,'msg':ms})
 
 if __name__ == '__main__':
         server_thread = threading.Thread(target=start_server)
         server_thread.start()
-
+        lang_check(lang)
         while True:
             rev = request_queue.get()
             try:

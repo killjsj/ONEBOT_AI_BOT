@@ -1,4 +1,5 @@
 #from tkinter import Image
+import importlib
 import os
 import time
 from diffusers import StableDiffusionPipeline,UNet2DConditionModel,AutoencoderKL,DiffusionPipeline,StableDiffusionUpscalePipeline
@@ -6,17 +7,15 @@ import torch
 from transformers import BitsAndBytesConfig, CLIPTextModel
 import numpy as np
 import ipywidgets as widgets
-import imp # support amd/intel gpu
-try:
-    imp.find_module('torch_directml')
-    found_directml = True
-    import torch_directml # type: ignore
-except ImportError:
-    found_directml = False
+spec = importlib.util.find_spec('torch_directml')
+found_directml = spec is not None
 if found_directml:
-    device=torch_directml.device()
+    import torch_directml  # type: ignore
+    device = torch_directml.device()
 else:
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  #!=cuda support
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # !=cuda support
+
+
 cache_dir = "./model_cache"
 pipe = None
 def ai(pro,negpro=''):
@@ -44,4 +43,3 @@ def ai(pro,negpro=''):
     os.remove("result.png")
     os.rename("result_out.png","result.png")#fix shit
     print(time.time() - s)
-#ai("NSFW:3,explicit:3,sensitive\nbest quality, masterpiece, nekonya, catgirl, cute, loyal, 11-12 years old, 139cm, 36kg, M-shaped bangs, long hair, light green, pink eyes, cat ears, white fur inside ears","lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry，safe")
