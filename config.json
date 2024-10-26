@@ -1,5 +1,5 @@
 {
-    "netowrk":{
+    "network":{
         "t":{
             "ip":"http://127.0.0.1",
             "port":"5700"
@@ -17,7 +17,7 @@
     },
     "maxtokens":"0",
     "lang":"zh",
-    "allow_ai_draw":true,
+    "allow_ai_draw":false,
     "local":{
         "model":""
     },

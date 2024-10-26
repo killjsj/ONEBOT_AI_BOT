@@ -21,7 +21,7 @@ n = 0
 c = 0
 uset = 0
 with open('config.json','r+') as f:
-    config = json.loads(f)
+    config = json.load(f)
 support = ['zh','en']
 fip = config["network"]["f"]["ip"]
 tip = config["network"]["t"]["ip"]

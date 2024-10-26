@@ -26,7 +26,7 @@ if found_directml:
 else:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # !=cuda support
 with open('config.json','r+') as f:
-    config = json.loads(f)
+    config = json.load(f)
 aikey = config["secert"]["aikey"]
 allow_draw = config["allow_ai_draw"]
 lang = config["lang"]

@@ -7,10 +7,10 @@ from typing import *
 
 
 with open('config.json','r+') as f:
-    config = json.loads(f)
+    config = json.load(f)
 aikey = config["secert"]["aikey"]
 allow_draw = config["allow_ai_draw"]
-url = config["online"]["url"]
+url = config["online"]["aiurl"]
 lang = config["lang"]
 model = config["online"]["model"]
 maxtokens = int(config["maxtokens"])

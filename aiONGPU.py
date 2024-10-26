@@ -25,7 +25,7 @@ allow_ai_use_tools = False #!!! WRITE BY YOU !!!!
 #no tools because i dont know how to write:(
 
 with open('config.json','r+') as f:
-    config = json.loads(f)
+    config = json.load(f)
 aikey = config["secert"]["aikey"]
 allow_draw = config["allow_ai_draw"]
 lang = config["lang"]

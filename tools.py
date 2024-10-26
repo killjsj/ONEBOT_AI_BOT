@@ -2,7 +2,7 @@ import json
 import requests
 
 with open('config.json','r+') as f:
-    config = json.loads(f)
+    config = json.load(f)
 fht = config["secert"]["fht"]
 
 def wea(Loc, adm, lang='zh'):
@@ -61,6 +61,3 @@ def wea(Loc, adm, lang='zh'):
         return 500, f"HTTP error occurred: {http_err}"
     except Exception as e:
         return 500, f"An error occurred: {e}"
-
-result_code, result = wea('beijing', 'beijing', lang='en')
-print(f"Code: {result_code}, Result: {result}")
