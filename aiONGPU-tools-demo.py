@@ -11,7 +11,6 @@ viwe image-7.png
 import os
 import time
 from typing import *
-from dotenv import load_dotenv
 import json
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,pipeline
@@ -26,12 +25,13 @@ if found_directml:
     device = torch_directml.device()
 else:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # !=cuda support
-
-
-load_dotenv()  # tools demo(you can just use this)
-maxtoken = int(os.getenv("Gmodel_maxtokens"))
-model_name = "DiTy/gemma-2-9b-it-function-calling-GGUF"  # os.getenv("Gmodel")
-lang = os.getenv("lang")
+with open('config.json','r+') as f:
+    config = json.loads(f)
+aikey = config["secert"]["aikey"]
+allow_draw = config["allow_ai_draw"]
+lang = config["lang"]
+maxtoken = int(config["maxtokens"])
+model_name = "DiTy/gemma-2-9b-it-function-calling-GGUF"  # config["local"]["model"]
 cache_dir = "./model_cache"
 pipe = None
 tokenizer = None
@@ -39,14 +39,20 @@ model = None
 tool = []
 def weather(adm1: str, adm2: str) -> Any:
     """
-    Queries the weather for a given location and returns the result.
+    Query the weather and return text; if two or more cities are found, return -1 and list the cities found(you need choose and call it again); if there's a failure or query error, return 500
     
     Args:
         adm1: The city or district (e.g., Nanshan, Jiangmen, etc.) without 'District'.
         adm2: The province (e.g., Chongqing, Shenzhen, etc.).
     """
-    print(adm1 + "+" + adm2)
-    result = tools.wea(adm1, adm2,lang)  # Assuming 'tools.wea' is a function that fetches weather data
+    print(adm1 +"+"+ adm2)
+    f,result = tools.wea(adm1,adm2,lang)
+    if f == -1:
+        result = '-1,'
+        for n in result:
+            result = result + n['name'] +' adm1:'+ n['adm1'] +' adm2:'+ n['adm2'] +' country:' + n['country'] + '\n'
+    elif f == 0:
+        result = '0,' + result
     return {"result": result}
 
 def gtime() -> str:
@@ -109,7 +115,9 @@ def draw(prompt: str, neg_prompt: str) -> str:
     print("drawing" + prompt)
     drew.ai(prompt, neg_prompt)  # Assuming 'drew.ai' is a function that generates an image
     return "(((./wdads.png)))"
-tool_map = [gtime, weather, draw]
+
+
+tool_map = [gtime, weather, draw] if allow_draw else [gtime, weather]
 
 def chat(messages, input):
     global tokenizer, model,pipe
@@ -139,7 +147,7 @@ def chat(messages, input):
         tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir, trust_remote_code=True)
         generate_kwargs = {
                 "max_new_tokens": maxtoken
-        }
+        } if maxtoken >= 0 else {}
         pipe = pipeline("text-generation",torch_dtype="auto",model=model, tokenizer=tokenizer,
                 trust_remote_code=True,**generate_kwargs)
     inputs = pipe.tokenizer.apply_chat_template(

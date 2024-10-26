@@ -4,15 +4,16 @@ from openai import OpenAI
 import json
 import tools
 from typing import *
-from dotenv import load_dotenv
 
-allow_draw = False
 
-load_dotenv()
-aikey = os.getenv("aikey")
-url = os.getenv("aiurl")
-lang = os.getenv("lang")
-model = os.getenv("model")
+with open('config.json','r+') as f:
+    config = json.loads(f)
+aikey = config["secert"]["aikey"]
+allow_draw = config["allow_ai_draw"]
+url = config["online"]["url"]
+lang = config["lang"]
+model = config["online"]["model"]
+maxtokens = int(config["maxtokens"])
 client = OpenAI(
     api_key = aikey, 
     base_url = url,
@@ -40,7 +41,7 @@ if not(allow_draw):
             "type": "function",
             "function": {
                 "name": "weather",
-                "description": "query weather and return text (note: failure or query error returns 500)",
+                "description": "Query the weather and return text; if two or more cities are found, return -1 and list the cities found(you need choose and call it again); if there's a failure or query error, return 500",
                 "parameters": {
                     "type": "object",
                     "required": ["adm1","adm2"],
@@ -103,7 +104,7 @@ else:
             "type": "function",
             "function": {
                 "name": "weather",
-                "description": "query weather and return text (note: failure or query error returns 500)",
+                "description": "Query the weather and return text; if two or more cities are found, return -1 and list the cities found(you need choose and call it again); if there's a failure or query error, return 500",
                 "parameters": {
                     "type": "object",
                     "required": ["adm1","adm2"],
@@ -149,7 +150,13 @@ def weather(arguments: Dict[str, Any]) -> Any:
     adm1 = arguments["adm1"]
     adm2 = arguments["adm2"]
     print(adm1 +"+"+ adm2)
-    result = tools.wea(adm1,adm2,lang)
+    f,result = tools.wea(adm1,adm2,lang)
+    if f == -1:
+        result = '-1,'
+        for n in result:
+            result = result + n['name'] +' adm1:'+ n['adm1'] +' adm2:'+ n['adm2'] +' country:' + n['country'] + '\n'
+    elif f == 0:
+        result = '0,' + result
     return {"result": result}
 
 def gtime(arguments: Dict[str, Any]) :
@@ -159,7 +166,6 @@ def gtime(arguments: Dict[str, Any]) :
     formatted_time = time.strftime('%Y-%m-%d %H:%M:%S', local_time)
     return formatted_time
 
-
 def draw(arguments: Dict[str, Any]) :
     adm1 = arguments["pro"]
     adm2 = arguments["negpro"]
@@ -167,7 +173,6 @@ def draw(arguments: Dict[str, Any]) :
     
     drew.ai(adm1,adm2)
     return "(((./wdads.png)))"
-
 
 tool_map = {
     "time" : gtime,
@@ -186,6 +191,7 @@ def chat(messages,input):
             messages=messages,
             temperature=0.3,
             tools=tool, 
+            max_tokens= None if maxtokens <= 0 else maxtokens,
         )
         choice = completion.choices[0]
         finish_reason = choice.finish_reason

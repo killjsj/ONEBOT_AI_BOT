@@ -8,9 +8,22 @@ def remove_mc_formatting(text):
        text = text.replace(f'§{code}', '')
    return text
  
-def get_java_server_info(address, port,lang='en'):
+def get_java_server_info(address,lang='en'):
    start_time = time.time()
-   temp_ip = address
+   address = '127.0.0.1'
+   temp_ip, port = address, 25565
+
+# 检查address是否包含冒号（:）
+   if ":" in address:
+      # 如果包含冒号，分割字符串获取IP地址和端口号
+      temp_ip, port = address.split(":")
+    # 确保端口号是整数
+      port = int(port)
+   else:
+    # 如果不包含冒号，使用默认端口号25565
+      temp_ip = address
+      port = 25565
+
    temp_text = ""
    tcp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
    try:

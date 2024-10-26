@@ -9,47 +9,80 @@ run:install.ps1
 run:python main.py  
 startuping  
 ## commands:  
-`cx` or `/server`:get servers online players(btw cx means '查询',inquire in chinese)
-`/ai `:run ai chat
+`cx` or `/server`:get servers online players(btw cx means '查询',inquire in chinese) can config to get mc server:)
+`/ai `:run ai chat  
+`/config `:config this
 # config:  
-## .env:
-open [.env ](.env) ![.env](image-6.png)  
+## config.json:
+open [config.json](config.json)
 ```
-aikey=  
-fht = ''  
-fip='0.0.0.0'   
-tip='127.0.0.1'  
-fport= '5700'   
-tport= '5701'   
-aiurl = ''  
-model = ''  
-Gmodel_maxtokens = 1000
-Gmodel = '' 
-Gmodel_login_token = ''
-lang = ''
-cx_mc = ["0","0"]
-mc_ip = ''
-mc_port = ''
-sl_pb = ["YyMi7aUL","Q6u5vvmP"]
+{
+    "netowrk":{
+        "t":{
+            "ip":"http://127.0.0.1",
+            "port":"5700"
+        },
+        "f":{
+            "ip":"127.0.0.1",
+            "port":"5701"
+        }
+    },
+    "admin":[],
+    "secert":{
+        "fht":"",
+        "aikey":"",
+        "local_model_login_token":""
+    },
+    "maxtokens":"",
+    "lang":"zh",
+    "allow_ai_draw":true,
+    "local":{
+        "model":""
+    },
+    "online":{
+        "aiurl":"",
+        "model":""
+    },
+    "group":{
+        "0":{
+            "ai":true,
+            "cx->mc":false,
+            "mc_ip":"",
+            "sl_pb":["YyMi7aUL","Q6u5vvmP"],
+            "tdwf":{
+                "en":false,
+                "one2":1,
+                "atwf":true
+            }
+        }
+    }
+}
 ```
-aikey=open ai api key  
-fht = 和风天气api key waiting for rewrite  
-fip=onebot Post from ip  
-tip=onebot Post to ip  
-fport= onebot post from port  
-tport= onebot post to port  
-aiurl = openai base url  
-model = openai model choose  
-Gmodel_maxtokens = On local model/online model max Token  
-Gmodel = hugging face model url    
-Gmodel_login_token = 'hf_?' if model need your login token,input there  
-lang = languange support weather(unfin) prompt(->[`lang`](lang)+`\prompt_`+lang+`.txt` like:lang\prompt_zh.txt)  
-cx_mc = group of using MC-Server-Info(not sl server) write like `["group1","group2"]`  
-sl_pb = your pastebin of sl server write like `["pb1","pb2"]` (btw 'YyMi7aUL','Q6u5vvmP' is my favorite sl server:)  
+network_t:  
+    ip=onebot Post to ip   
+    port= onebot post to port  
+network_f:  
+    ip=onebot Post from ip  
+    port= onebot post from port  
+maxtokens=ai gen max tokens  
+admin=admin(you need input their id)  
+online:  
+aiurl=api url  
+model=calling model  
+secert:  
+"fht"= hefeng weather api key  
+"aikey":ai token key   
+"local_model_login_token": hf token  
+when you want ai can draw,change config.json `"allow_ai_draw":false` to `"allow_ai_draw":true` 
+group:  
+0:default config  
+tdwf:useless  
+sl_pb:your sl servers pastebin  
+"mc_ip":your mc ip  
+cx->mc:false = sl true = mc  
 ## program: 
 ### ai draw: 
-open [ai.py](ai.py)  
-when you want ai can draw,change `draw = False` to `draw = True`  
+when you want ai can draw,change config.json `"allow_ai_draw":false` to `"allow_ai_draw":true` 
 ### ai on gpu:  
 WARN tools ARE NEED YOUR MODEL SUPPORT AND CODE SUPPORT(WRITE BY YOU OR USE OUR DEMO [demo](aiONGPU-tools-demo.py) )   
 mostly like ![](image-8.png)  
@@ -104,4 +137,4 @@ paste this in to '"servers": []'
 }]
 ```
 like be:![a](image-6.png)  
-todo:more lang supports,wea rewrite
+todo:tdwf

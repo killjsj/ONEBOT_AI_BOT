@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-# 以下内容=SHIT 小心观看
+# SHIT 小心观看
 import queue
 from typing import *
-from dotenv import load_dotenv
 import re
 from ai import chat
 import slget
@@ -15,25 +14,20 @@ import json
 import http.server
 import threading
 from time import sleep
-load_dotenv()
 global rev_json
 rev_json = None
 global uset
 n = 0
 c = 0
 uset = 0
+with open('config.json','r+') as f:
+    config = json.loads(f)
 support = ['zh','en']
-aikey = os.getenv("aikey")
-fip = os.getenv("fip")
-tip = os.getenv("tip")
-tport = os.getenv("tport")
-fport = os.getenv("fport")
-lang = os.getenv("lang")
-print(os.getenv("cx_mc"))
-mc = json.loads(os.getenv("cx_mc"))
-mc_ip = os.getenv("mc_ip")
-mc_port = os.getenv("mc_port")
-sl_pb = json.loads(os.getenv("sl_pb"))
+fip = config["network"]["f"]["ip"]
+tip = config["network"]["t"]["ip"]
+tport = config["network"]["t"]["port"]
+fport = config["network"]["f"]["port"]
+lang = config["lang"]
 HttpResponseHeader = '''HTTP/1.1 200 OK\r\n
 Content-Type: text/html\r\n\r\n
 '''
@@ -71,10 +65,15 @@ messages = start_messages
 request_queue = queue.Queue()
 file_content_dict = {}
 def permc(id,permneed):
-   #本来有其他东西的
-   if permneed == "ai":
-        # write by you guys
-        return True
+    if permneed == "admin":
+        if id in config["admin"]:
+            return True
+        else:return False
+    if permneed == "ai":
+        if str(qqg) in config["group"]:
+            return config["group"][str(qqg)]["ai"]
+        else: 
+            return config["group"][0]["ai"]
 def is_number(s):
     try:
         int(s)  # 尝试转换为浮点数
@@ -180,42 +179,122 @@ def run_group(rev):
                                                 send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable"})
                                         except ValueError:
                                             send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable,string not acceptable"})
-                            if '/ai' in rev['raw_message'] and permc(rev['user_id'],"ai"):
+                            if '/ai' in rev['raw_message'] and permc(qqg,"ai"):
                                 uset = uset+1
                                 
                                 threadc = threading.Thread(target=runchat,args=(uset,qqg,))
                                 threadc.start()      
                             if '/server' in rev['raw_message'] or rev['raw_message'].lower() == "cx":
-                                print(mc)
-                                if str(qqg) in mc:
-                                    ms = mcserver.get_java_server_info(mc_ip,mc_port,lang)
-                                    send_msg({'msg_type':"group",'number':qqg,'msg':ms})
-                                else:
-                                    server = slget.getslserver(sl_pb) #sl pastebin AND WAITING FOR REWRITE
-                                    ms = ""
-                                    if server != "404":
-                                        for no in server:
-                                            def remove_html_tags(text):
-                                                clean_text = re.sub(r'(?i)<[^>]+>', '', text)
-                                                return clean_text
-                                            no = [remove_html_tags(item) for item in no]
-                                            if lang == 'zh':
-                                                ms = ms + no[3] + " 玩家数:" + no[5] +' ip:'+no[0]+"\n"
-                                            elif lang == 'en':
-                                                 ms = ms + no[3] + " players:" + no[5] +' ip:'+no[0] +"\n"
-                                    elif server == "500":
-                                        if lang == 'zh':
-                                            ms = "内部错误 可能机器人网络问题 请稍后重试"
-                                        elif lang == 'en':
-                                            ms = "500 Interal error sorry:("
-                                    elif server == "404":
-                                        if lang == 'zh':
-                                            ms = "服务器没了 可能没搜到或者机器人网络问题"
-                                        elif lang == 'en':
-                                            ms = "404 server offline:("
+                                ms = ''
+                                if str(qqg) in config["group"]:
+                                    if config["group"][str(qqg)]["cx->mc"]:
+                                        ip = config["group"][str(qqg)]["mc_ip"]
+                                        ms = mcserver.get_java_server_info(ip,lang)
                                     else:
-                                        ms = server
-                                    send_msg({'msg_type':"group",'number':qqg,'msg':ms})
+                                        sl_pb = config["group"][str(qqg)]["sl_pb"]
+                                        server = slget.getslserver(sl_pb) #sl pastebin AND WAITING FOR REWRITE
+                                        ms = ""
+                                        if server != "404":
+                                            for no in server:
+                                                def remove_html_tags(text):
+                                                    clean_text = re.sub(r'(?i)<[^>]+>', '', text)
+                                                    return clean_text
+                                                no = [remove_html_tags(item) for item in no]
+                                                if lang == 'zh':
+                                                    ms = ms + no[3] + " 玩家数:" + no[5] +' ip:'+no[0]+"\n"
+                                                elif lang == 'en':
+                                                    ms = ms + no[3] + " players:" + no[5] +' ip:'+no[0] +"\n"
+                                        elif server == "500":
+                                            if lang == 'zh':
+                                                ms = "内部错误 可能机器人网络问题 请稍后重试"
+                                            elif lang == 'en':
+                                                ms = "500 Interal error sorry:("
+                                        elif server == "404":
+                                            if lang == 'zh':
+                                                ms = "服务器没了 可能没搜到或者机器人网络问题"
+                                            elif lang == 'en':
+                                                ms = "404 server offline:("
+                                        else:
+                                            ms = server
+                                else: 
+                                    if config["group"]["0"]["cx->mc"]:
+                                        ip = config["group"][str(qqg)]["mc_ip"]
+                                        ms = mcserver.get_java_server_info(ip,lang)
+                                    else:
+                                        sl_pb = config["group"]["0"]["sl_pb"]
+                                        server = slget.getslserver(sl_pb) #sl pastebin AND WAITING FOR REWRITE
+                                        ms = ""
+                                        if server != "404":
+                                            for no in server:
+                                                def remove_html_tags(text):
+                                                    clean_text = re.sub(r'(?i)<[^>]+>', '', text)
+                                                    return clean_text
+                                                no = [remove_html_tags(item) for item in no]
+                                                if lang == 'zh':
+                                                    ms = ms + no[3] + " 玩家数:" + no[5] +' ip:'+no[0]+"\n"
+                                                elif lang == 'en':
+                                                    ms = ms + no[3] + " players:" + no[5] +' ip:'+no[0] +"\n"
+                                        elif server == "500":
+                                            if lang == 'zh':
+                                                ms = "内部错误 可能机器人网络问题 请稍后重试"
+                                            elif lang == 'en':
+                                                ms = "500 Interal error sorry:("
+                                        elif server == "404":
+                                            if lang == 'zh':
+                                                ms = "服务器没了 可能没搜到或者机器人网络问题"
+                                            elif lang == 'en':
+                                                ms = "404 server offline:("
+                                        else:
+                                            ms = server
+                                send_msg({'msg_type':"group",'number':qqg,'msg':ms})
+                                #wait for tdwf write:(
+                            if '/config' in rev['raw_message'][:6] and permc(rev['user_id'],"admin"):
+                                command = rev['raw_message'][6:].split()
+                                if command[0] == "group" and command[1] == "config":
+                                    if command[2] == "cx->mc":
+                                        if str(qqg) in config["group"]:
+                                            config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
+                                        else: 
+                                            config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                            config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
+                                    if command[2] == "ai":
+                                        if str(qqg) in config["group"]:
+                                            config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK ai mode ->" + str(config["group"][str(qqg)]["ai"])})
+                                        else: 
+                                            config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                            config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created ai mode ->" + str(config["group"][str(qqg)]["ai"])})
+                                    if command[2] == "mcip":
+                                        if str(qqg) in config["group"]:
+                                            config["group"][str(qqg)]["mc_ip"] = command[3]
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2mc ip ->" + str(command[3])})
+                                        else: 
+                                            config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                            config["group"][str(qqg)]["mc_ip"] = command[3]
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ip ->" + command[3]})
+                                    if command[2] == "slpb":
+                                        if str(qqg) in config["group"]:
+                                            config["group"][str(qqg)]["sl_pb"] = command[2:]
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2sl pastebin changed"})
+                                        else: 
+                                            config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                            config["group"][str(qqg)]["sl_pb"] = command[2:]
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2sl pastebin changed"})
+                                    if command[2] == "tdwf":
+                                            if str(qqg) in config["group"]:
+                                                config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
+                                            else: 
+                                                config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                                config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
+
+
+
+
 
 if __name__ == '__main__':
         server_thread = threading.Thread(target=start_server)
