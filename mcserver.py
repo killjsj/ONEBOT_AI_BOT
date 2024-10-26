@@ -10,7 +10,6 @@ def remove_mc_formatting(text):
  
 def get_java_server_info(address,lang='en'):
    start_time = time.time()
-   address = '127.0.0.1'
    temp_ip, port = address, 25565
 
 # 检查address是否包含冒号（:）

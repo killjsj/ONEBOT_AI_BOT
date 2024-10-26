@@ -65,7 +65,13 @@ messages = start_messages
 request_queue = queue.Queue()
 file_content_dict = {}
 def permc(id,permneed):
+    global config
+    
+    with open('config.json','r+') as f:
+        config = json.load(f)
+        print(config["admin"])
     if permneed == "admin":
+        
         if id in config["admin"]:
             return True
         else:return False
@@ -147,7 +153,7 @@ def runchat(i,qqg):
                                         messages = [{"role": "system", "content": readprompt(langprom,mode)},]
                                     send_msg({'msg_type':'group','number':ng,'msg':user+response})
 def run_group(rev):
-                            global uset,qqg,messages
+                            global uset,qqg,messages,config
                             sender = rev['sender']
                             try:
                                 roleq = sender['role']
@@ -185,6 +191,8 @@ def run_group(rev):
                                 threadc = threading.Thread(target=runchat,args=(uset,qqg,))
                                 threadc.start()      
                             if '/server' in rev['raw_message'] or rev['raw_message'].lower() == "cx":
+                                with open('config.json','r+') as f:
+                                    config = json.load(f)
                                 ms = ''
                                 if str(qqg) in config["group"]:
                                     if config["group"][str(qqg)]["cx->mc"]:
@@ -248,10 +256,11 @@ def run_group(rev):
                                             ms = server
                                 send_msg({'msg_type':"group",'number':qqg,'msg':ms})
                                 #wait for tdwf write:(
-                            if '/config' in rev['raw_message'][:6] and permc(rev['user_id'],"admin"):
-                                command = rev['raw_message'][6:].split()
-                                if command[0] == "group" and command[1] == "config":
-                                    if command[2] == "cx->mc":
+                            if '/config' in rev['raw_message'].lstrip()[:7] and permc(str(rev['user_id']),"admin"):
+                                command = rev['raw_message'].lstrip()[7:].split()
+                                print(command)
+                                if command[0] == "group":
+                                    if command[1] == "cx->mc":
                                         if str(qqg) in config["group"]:
                                             config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
@@ -259,7 +268,7 @@ def run_group(rev):
                                             config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                             config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
-                                    if command[2] == "ai":
+                                    if command[1] == "ai":
                                         if str(qqg) in config["group"]:
                                             config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK ai mode ->" + str(config["group"][str(qqg)]["ai"])})
@@ -267,23 +276,23 @@ def run_group(rev):
                                             config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                             config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created ai mode ->" + str(config["group"][str(qqg)]["ai"])})
-                                    if command[2] == "mcip":
+                                    if command[1] == "mcip":
                                         if str(qqg) in config["group"]:
-                                            config["group"][str(qqg)]["mc_ip"] = command[3]
-                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2mc ip ->" + str(command[3])})
+                                            config["group"][str(qqg)]["mc_ip"] = command[2]
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2mc ip ->" + str(command[2])})
                                         else: 
                                             config["group"][str(qqg)] = config["group"]["0"] # copy a new config
-                                            config["group"][str(qqg)]["mc_ip"] = command[3]
-                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ip ->" + command[3]})
-                                    if command[2] == "slpb":
+                                            config["group"][str(qqg)]["mc_ip"] = command[2]
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ip ->" + command[2]})
+                                    if command[1] == "slpb":
                                         if str(qqg) in config["group"]:
-                                            config["group"][str(qqg)]["sl_pb"] = command[2:]
+                                            config["group"][str(qqg)]["sl_pb"] = command[1:]
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2sl pastebin changed"})
                                         else: 
                                             config["group"][str(qqg)] = config["group"]["0"] # copy a new config
-                                            config["group"][str(qqg)]["sl_pb"] = command[2:]
+                                            config["group"][str(qqg)]["sl_pb"] = command[1:]
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2sl pastebin changed"})
-                                    if command[2] == "tdwf":
+                                    if command[1] == "tdwf":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
