@@ -15,7 +15,7 @@
         "aikey":"",
         "local_model_login_token":""
     },
-    "maxtokens":"",
+    "maxtokens":"0",
     "lang":"zh",
     "allow_ai_draw":true,
     "local":{

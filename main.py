@@ -290,7 +290,9 @@ def run_group(rev):
                                             else: 
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
-                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})                                          
+                                    with open('config.json','w+') as f:
+                                        json.dump(config,f)
 
 
 

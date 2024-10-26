@@ -31,7 +31,6 @@ def get_java_server_info(address,lang='en'):
        tcp_client.sendall(b'\xfe\x01')
        data = tcp_client.recv(1024)
        if data:
-           temp_text = "\nlag:" + str(int((time.time() - start_time) * 1000)) + "ms"
            if data[:2] == b'\xff\x00':
                data_parts = data.split(b'\x00\x00\x00')
                if len(data_parts) >= 6:
