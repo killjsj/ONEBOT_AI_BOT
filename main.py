@@ -31,27 +31,25 @@ lang = config["lang"]
 HttpResponseHeader = '''HTTP/1.1 200 OK\r\n
 Content-Type: text/html\r\n\r\n
 '''
-def readprompt(file_from:str,target_i:int = 0):
-    target = str(target_i)
-    target_i = int(target_i)
-    with open(file_from,'r',encoding='utf-8') as file:
+def readprompt(file_from: str, target_i: int = 0):
+    with open(file_from, 'r', encoding='utf-8') as file:
         prompt_list = file.readlines()
         if prompt_list[0][:4] != '```0':
             raise TypeError('prompt not correct format')
-        #format check
-        target = '```' + target
-        check_p1 = False
+        # format check
+        target = '```' + str(target_i)
         finall = ''
+        check_p1 = False
         for a in prompt_list:
             a = a.strip()
             if check_p1:
-                if a[:3+len(str(int(target_i)+1))] == ('```' + str(int(target_i)+1)):
+                if a[:3 + len(str(int(target_i) + 1))] == ('```' + str(int(target_i) + 1)) or a[:3 + len(str(int(target_i) + 1))] == "```":
                     finall = finall.strip('\n')
                     return finall
-                finall = finall + a + '\n'
-            if a[:3+len(str(target_i))] == target:
+                finall += a + '\n'
+            if a[:3 + len(str(target_i))] == target:
                 check_p1 = True
-        return readprompt(file_from,0)
+        return None
 def lang_check(lang):
     if lang in support:
         print('lang check pass')
@@ -60,7 +58,7 @@ def lang_check(lang):
         raise Exception('Not support lang:' + lang)
 mode = 0
 start_messages = []
-langprom = 'lang\\prompt_' + lang + '.txt'
+langprom = os.path.join('lang', f'prompt_{lang}.txt')
 messages = start_messages
 request_queue = queue.Queue()
 file_content_dict = {}
@@ -173,19 +171,20 @@ def run_group(rev):
                                         send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI CONTEXT RESET MODE "+str(mode)+" NOW"})
                                     if is_number(comm[1]):
                                         try:
-                                            comm[2] = int(comm[2])
-                                            if comm[2] <= 1 and comm[2] >= 0:
-                                                mode = comm[2]
-                                                messages.clear()
-                                                messages = [{"role": "system", "content": readprompt(langprom,0)},]
-                                                messages[0]['content'] = readprompt(langprom,mode)
+                                            comm[1] = int(comm[1])
+                                            if comm[1] <= 1 and comm[1] >= 0:
+                                                mode = comm[1]
                                                 print(messages)
+                                                if messages == []:
+                                                    messages = [{"role": "system", "content": readprompt(langprom,mode)},]
+                                                else:
+                                                    messages[0] = {"role": "system", "content": readprompt(langprom,mode)}
                                                 send_msg({'msg_type':'group','number':qqg,'msg':"200 OK"})
                                             else:
                                                 send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable"})
                                         except ValueError:
                                             send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable,string not acceptable"})
-                            if '/ai' in rev['raw_message'] and permc(qqg,"ai"):
+                            elif '/ai' in rev['raw_message'] and permc(qqg,"ai"):
                                 uset = uset+1
                                 
                                 threadc = threading.Thread(target=runchat,args=(uset,qqg,))
@@ -318,15 +317,13 @@ if __name__ == '__main__':
                     continue
                 if not rev["post_type"] == "meta_event":
                     print(rev)
-                if rev["post_type"] == "meta_event":
+                elif rev["post_type"] == "meta_event":
                     if not rev["meta_event_type"] == "heartbeat":
                         print(rev)
             except KeyError:
                 print(rev)
             finally:
                     try:
-                        if rev != None:
-                            print(rev)
                         if rev == None or (rev != None and rev['message_type'] == "private") or (rev != None and rev['notice_type'] != "message"):
                             try:
                                 if (rev != None and rev['message_type'] == "private") or (rev != None and rev['notice_type'] != "message"):

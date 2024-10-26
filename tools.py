@@ -8,15 +8,15 @@ fht = config["secert"]["fht"]
 def wea(Loc, adm, lang='zh'):
     try:
         geo = requests.get("https://geoapi.qweather.com/v2/city/lookup", params={"location": Loc, "key": fht, "lang": lang})
-        geo.raise_for_status()  # 检查请求是否成功
+        geo.raise_for_status()
         geo_data = geo.json()
         location_ids = None
         for location in geo_data["location"]:
-            if location["name"].lower() == Loc.lower() and (location["adm2"].lower() == adm.lower() or location["adm1"].lower() == adm.lower()):
+            if location["name"].lower() in Loc.lower() and (location["adm2"].lower() in adm.lower() or location["adm1"].lower() in adm.lower()):
                 location_ids = location["id"]
                 break
         if not location_ids:
-            return -1, "No matching city found"
+            return -1, geo_data["location"]
 
         re = requests.get("https://devapi.qweather.com/v7/weather/now", params={"location": location_ids, "key": fht, "lang": lang})
         re.raise_for_status()
@@ -49,9 +49,8 @@ def wea(Loc, adm, lang='zh'):
 
         day = requests.get("https://devapi.qweather.com/v7/indices/1d", params={"type": "1,3,5", "location": location_ids, "key": fht, "lang": lang})
         day.raise_for_status()
-        weather += "Weather Indices:\n" if lang == 'en' else "天气指数:\n"
         for index in day.json().get("daily"):
-            weather += f"{index['name']}: {index['category']} {index['text']} | " if lang == 'en' else f"{index['name']}: {index['category']} {index['text']} | "
+            weather += f"{index['name']}: {index['category']} {index['text']} | "
 
         return 0, weather
 

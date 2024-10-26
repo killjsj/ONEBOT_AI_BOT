@@ -47,10 +47,12 @@ def weather(adm1: str, adm2: str) -> Any:
     """
     print(adm1 +"+"+ adm2)
     f,result = tools.wea(adm1,adm2,lang)
+    print(result)
     if f == -1:
-        result = '-1,'
+        resultb = '-1,'
         for n in result:
-            result = result + n['name'] +' adm1:'+ n['adm1'] +' adm2:'+ n['adm2'] +' country:' + n['country'] + '\n'
+            resultb += str(n['name']) + ' adm1:' + n['adm1'] + ' adm2:' + n['adm2'] + ' country:' + n['country'] + '\n'        
+            result = resultb    
     elif f == 0:
         result = '0,' + result
     return {"result": result}
