@@ -163,3 +163,5 @@ cython_debug/
 model_cache/
 .conda/
 bk
+
+bak_config.json

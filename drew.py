@@ -2,11 +2,9 @@
 import importlib
 import os
 import time
-from diffusers import StableDiffusionPipeline,UNet2DConditionModel,AutoencoderKL,DiffusionPipeline,StableDiffusionUpscalePipeline
+from diffusers import DiffusionPipeline
 import torch
-from transformers import BitsAndBytesConfig, CLIPTextModel
 import numpy as np
-import ipywidgets as widgets
 spec = importlib.util.find_spec('torch_directml')
 found_directml = spec is not None
 if found_directml:
