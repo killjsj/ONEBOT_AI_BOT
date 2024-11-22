@@ -34,7 +34,7 @@ Content-Type: text/html\r\n\r\n
 '''
 from wakeonlan import send_magic_packet #allow remote wakeup (if you dont need it,change wakeup true to false) this feature will remove at next version
 #waiting for muilt lang
-help_msg = f"""  ---bot help---
+help_msg = f"""---bot help---
 -/config        -修改机器人
 --group         -修改群设置
 --- cx->mc      -将cx替换成mc/sl(切换)
