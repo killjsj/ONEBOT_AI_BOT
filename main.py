@@ -172,7 +172,7 @@ def clearmessage(qqg:int,messages:dict) -> dict:
     qqg = str(qqg)
     if qqg in messages:
         del messages[qqg]
-    messages[qqg] = {"role": "system", "content": readprompt(langprom,mode)}
+    messages[qqg] = [{"role": "system", "content": readprompt(langprom,mode)}]
     return messages
 
 
@@ -183,8 +183,9 @@ def runchat(i,qqg,input):
                                     user =  '[CQ:at,qq=' + str(rev['user_id']) + '] '
                                     if ng not in messages:
                                         messages[ng] = [{"role": "system", "content": readprompt(langprom,mode)}]
+                                    
                                     response,messages[str(qqg)] = chat(messages.get(str(qqg)),comm)
-                                    print(messages,response)
+                                    
                                     if i >= 11:
                                         messages = clearmessage(qqg,messages)
                                     send_msg({'msg_type':'group','number':qqg,'msg':user+response})
@@ -214,7 +215,6 @@ def run_r(rev):
                                                         attext = text_item['data']['text']
                                                         atted = True
                                                         break
-                                print(atted,attext,rm)
                                 qqg = rev['group_id']
                                 if ('/aisetting' in rev['raw_message'].lower()):
                                         attext = rev['raw_message']
@@ -305,7 +305,8 @@ def run_r(rev):
                                                 ms = server
                                     send_msg({'msg_type':"group",'number':qqg,'msg':ms})
                                     #wait for tdwf write:(
-                                elif '/help' in rev['raw_message'].lower():
+                                elif '/help' in rev['raw_message']:
+                                    print("/help")
                                     send_msg({'msg_type':"group",'number':qqg,'msg':help_msg})
                                 elif '/config' in rev['raw_message'].lower().lstrip()[:7] and permc(str(rev['user_id']),"admin"):
                                     command = rev['raw_message'].lstrip()[7:].split()
