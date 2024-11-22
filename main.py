@@ -230,10 +230,13 @@ def run_r(rev):
                                                 if comm[1] <= 1 and comm[1] >= 0:
                                                     mode = comm[1]
                                                     print(messages)
-                                                    if not messages[str(qqg)] == []:
-                                                        messages[str(qqg)] = [{"role": "system", "content": readprompt(langprom,mode)},]
+                                                    if str(qqg) in messages:
+                                                        if not messages[str(qqg)] == []:
+                                                            messages[str(qqg)] = [{"role": "system", "content": readprompt(langprom,mode)},]
+                                                        else:
+                                                            messages[str(qqg)][0] = {"role": "system", "content": readprompt(langprom,mode)}
                                                     else:
-                                                        messages[str(qqg)][0] = {"role": "system", "content": readprompt(langprom,mode)}
+                                                        clearmessage(qqg,messages)
                                                     send_msg({'msg_type':'group','number':qqg,'msg':"200 OK"})
                                                 else:
                                                     send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable"})
