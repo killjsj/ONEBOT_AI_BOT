@@ -1,5 +1,4 @@
+attext = ' /ai wadsa adad'
 
-import requests
-
-
-requests.post("http://127.0.0.1","a")
+attext = attext.strip()
+print(attext)

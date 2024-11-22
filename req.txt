@@ -27,6 +27,8 @@ transformers
 huggingface_hub
 accelerate
 aiosqlite
+#wakeonlan
+wakeonlan
 #qwen2vl
 optimum
 auto-gptq

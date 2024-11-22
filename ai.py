@@ -176,6 +176,7 @@ def draw(arguments: Dict[str, Any]) :
     drew.ai(adm1,adm2)
     return "(((./wdads.png)))"
 
+
 tool_map = {
     "time" : gtime,
     "weather" : weather,
