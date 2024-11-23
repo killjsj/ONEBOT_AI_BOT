@@ -48,7 +48,7 @@ if not(allow_draw):
             "type": "function",
             "function": {
                 "name": "getpeople",
-                "description": "get people in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
+                "description": "get people list in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
                 "parameters": {
                     "type": "object",
                     "required": ["group"],
@@ -64,7 +64,7 @@ if not(allow_draw):
         {
             "type": "function",
             "function": {
-                "name": "time",
+                "name": "getgroup",
                 "description": "get current you are talking with groupid(function getpeople need this!)",
                 "parameters": {
                     "type": "object",
@@ -145,7 +145,7 @@ else:
             "type": "function",
             "function": {
                 "name": "getpeople",
-                "description": "get people in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
+                "description": "get people list in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
                 "parameters": {
                     "type": "object",
                     "required": ["group"],
@@ -161,7 +161,7 @@ else:
         {
             "type": "function",
             "function": {
-                "name": "time",
+                "name": "getgroup",
                 "description": "get current you are talking with groupid(function getpeople need this!)",
                 "parameters": {
                     "type": "object",
@@ -308,6 +308,7 @@ def chat(messages,input,qqg):
                     tool_call_arguments = json.loads(tool_call.function.arguments) 
                     tool_function = tool_map[tool_call_name] 
                     tool_result = tool_function(tool_call_arguments)
+                    print("calling ",tool_call_name," args:",tool_call_arguments," result:",tool_result)
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
