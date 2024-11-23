@@ -128,7 +128,7 @@ def draw(prompt: str, neg_prompt: str) -> str:
 
 def getp(group):
     """
-    get people in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)
+    get people in the group(need groupid,you can call 'getgroup' to get it)(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)
     
     Args:
         group:input groupid and return people in this group
