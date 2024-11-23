@@ -379,9 +379,8 @@ def run_r(rev):
                                     uset = uset+1
                                     attext = attext.strip()
                                     attext = process_message(rev)
-                                    if "[CQ:markdown," not in attext:
-                                        threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
-                                        threadc.start()    
+                                    threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
+                                    threadc.start()    
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin"):
                                     wake()

@@ -123,11 +123,11 @@ if not(allow_draw):
                 }
             }
         },
-        {
+                {
             "type": "function",
             "function": {
                 "name": "getpeople",
-                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. Target (role, name, user_id), 2. Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id) If you do not fill in the field, return all (recommended)",
+                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. Judgment condition (also known as parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
                 "parameters": {
                     "type": "object",
                     "required": ["group"],
@@ -142,12 +142,13 @@ if not(allow_draw):
                         },
                         "filter_cond":{
                             "type": "string",
-                            "description": """Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id)"""
+                            "description": """Judgment condition (parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
                         },
                     }
                 }
             }
         },
+
         {
             "type": "function",
             "function": {
@@ -169,7 +170,7 @@ if not(allow_draw):
             "type": "function",
             "function": {
                 "name": "getdeltpeopleinfo",
-                "description": "get more people info",
+                "description": "get more people info(if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
                 "parameters": {
                     "type": "object",
                     "required": ["groupid","userid"],
@@ -211,7 +212,7 @@ else:
             "type": "function",
             "function": {
                 "name": "getpeople",
-                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. Target (role, name, user_id), 2. Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id) If you do not fill in the field, return all (recommended)",
+                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. Judgment condition (also known as parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
                 "parameters": {
                     "type": "object",
                     "required": ["group"],
@@ -226,7 +227,7 @@ else:
                         },
                         "filter_cond":{
                             "type": "string",
-                            "description": """Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id)"""
+                            "description": """Judgment condition (parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
                         },
                     }
                 }
@@ -346,7 +347,7 @@ else:
             "type": "function",
             "function": {
                 "name": "getdeltpeopleinfo",
-                "description": "get more personal(one person) info",
+                "description": "get more personal(one person) info (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
                 "parameters": {
                     "type": "object",
                     "required": ["groupid","userid"],
