@@ -153,8 +153,7 @@ def send_msg(resp_dict):
     ttip = tip + ":" + str(tport)
     if msg_type == 'group':
         payl0 = {"message_type":msg_type,"group_id":number,"message":msg}
-        print("sent " + payl0.__str__())
-        print(msg)
+        print("sent " + repr(msg))
         response = requests.post(ttip+"/send_msg", json=payl0)
         print(response.text)
         print(response.status_code)
@@ -176,7 +175,7 @@ def clearmessage(qqg:int,messages:dict) -> dict:
     return messages
 
 
-def runchat(i,qqg,input):
+def runchat(i,qqg,input,sender,self_id):
                                     global uset,messages
                                     ng = str(qqg)
                                     comm = input
@@ -184,7 +183,7 @@ def runchat(i,qqg,input):
                                     if ng not in messages:
                                         messages[ng] = [{"role": "system", "content": readprompt(langprom,mode)}]
                                     
-                                    response,messages[str(qqg)] = chat(messages.get(str(qqg)),comm,qqg)
+                                    response,messages[str(qqg)] = chat(messages.get(str(qqg)),comm,qqg,sender,str(self_id))
                                     
                                     if i >= 11:
                                         messages = clearmessage(qqg,messages)
@@ -357,10 +356,10 @@ def run_r(rev):
                                                     send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})                                          
                                         with open('config.json','w+') as f:
                                             json.dump(config,f,indent=4)
-                                elif atted and permc(qqg,"ai"):
+                                elif atted and permc(qqg,"ai")and not rev.get('post_type','message') == "message_sent":
                                     uset = uset+1
                                     attext = attext.strip()
-                                    threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,))
+                                    threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
                                     threadc.start()    
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin"):

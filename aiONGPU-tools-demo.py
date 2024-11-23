@@ -21,6 +21,7 @@ import drew
 import tools  # support amd/intel gpu
 
 group = queue.Queue(maxsize=3)
+send = queue.Queue(maxsize=3)
 
 spec = importlib.util.find_spec('torch_directml')
 found_directml = spec is not None
@@ -45,6 +46,7 @@ pipe = None
 tokenizer = None
 model = None
 tool = []
+self_id = 0
 def weather(adm1: str, adm2: str) -> Any:
     """
     Query the weather and return text; if two or more cities are found, return -1 and list the cities found(you need choose and call it again); if there's a failure or query error, return 500
@@ -128,7 +130,7 @@ def draw(prompt: str, neg_prompt: str) -> str:
 
 def getp(group):
     """
-    get people in the group(need groupid,you can call 'getgroup' to get it)(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)
+    get people in the groupid(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers)(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)
     
     Args:
         group:input groupid and return people in this group
@@ -142,7 +144,8 @@ def getp(group):
         "nickname": item["nickname"],
         "user_id": item["user_id"],
         "card": item["card"],
-        "title": item["title"]
+        "title": item["title"],
+        "role": item["role"]
     }
     for item in response.json()["data"]
     ]
@@ -156,10 +159,27 @@ def getg():
     except queue.Empty:
         print("qqg empty!return 0....")
         return 0
-tool_map = [gtime, weather, draw,getp,getg] if allow_draw else [gtime, weather,getp,getg]
 
-def chat(messages, input,qqg):
-    global tokenizer, model,pipe
+def get_s():
+    """
+    get current you are talking with somebody"
+    """
+    try:
+        return send.get(False)
+    except queue.Empty:
+        print("sender empty!return 0....")
+        return 0
+    
+def getm():
+    return self_id
+
+#update(fix) in next big update
+
+tool_map = [gtime, weather, draw,getp,getg,get_s,getm] if allow_draw else [get_s,gtime, weather,getp,getg,getm]
+
+def chat(messages, input,qqg,sender,self_ids):
+    global tokenizer, model,pipe,self_id
+    self_id = self_ids
     print("message:",messages," input:",input)
     if isinstance(input,dict):
         messages.append(input)
@@ -209,13 +229,19 @@ def chat(messages, input,qqg):
     function_response = ''
     generated_response = response
     if generated_response[:len("Function call: ")] == "Function call: ":
-        try:
-            group.put(qqg,False)
-        except queue.Full:
-            print("qqg full! skipping put")
         json_data = generated_response.replace("Function call: ",'')
         tool_call_arguments = json.loads(json_data) 
         tool_function = tool_call_arguments["name"] 
+        try:
+                    if tool_function == "getg":
+                        group.put(qqg,False)
+        except queue.Full:
+                    print("qqg full! skipping put")
+        try:
+                    if tool_function == "get_s":
+                        send.put(sender,False)
+        except queue.Full:
+                    print("sender full! skipping put")
         args = tool_call_arguments["arguments"]
         returndata = globals()[tool_function](**args)
         print(args)
