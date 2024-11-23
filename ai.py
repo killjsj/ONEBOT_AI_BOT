@@ -162,7 +162,7 @@ else:
             "type": "function",
             "function": {
                 "name": "getgroup",
-                "description": "get current you are talking with groupid(function getpeople need this!)",
+                "description": "get current you are talking with groupid(function getpeople need this!)(there is only one group number in each memory)",
                 "parameters": {
                     "type": "object",
                     "required": [],

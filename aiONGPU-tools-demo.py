@@ -149,7 +149,7 @@ def getp(group):
     return extracted_data
 def getg():
     """
-    get current you are talking with groupid(function getpeople need this!)
+    get current you are talking with groupid(function getpeople need this!)(there is only one group number in each memory)
     """
     try:
         return group.get(False)
