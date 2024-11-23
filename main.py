@@ -159,8 +159,7 @@ def send_msg(resp_dict):
         print(response.status_code)
     elif msg_type == 'private':
         payl0 = {"message_type":msg_type,"user_id":number,"message":msg}
-        print("sent " + str(payl0))
-        print(msg)
+        print("sent " + repr(msg))
         response = requests.post(ttip+"/send_msg", json=payl0)
         print(response.text)
         print(response.status_code)
@@ -174,6 +173,26 @@ def clearmessage(qqg:int,messages:dict) -> dict:
     messages[qqg] = [{"role": "system", "content": readprompt(langprom,mode)}]
     return messages
 
+def process_message(data):
+    self_id = data['self_id']
+    raw_message = data['raw_message']
+    message = data['message']
+    has_self_at = any(
+        item['type'] == 'at' and str(item['data']['qq']) == str(self_id)
+    for item in message
+    )
+    if not has_self_at:
+        return None
+    for item in message:
+        if item['type'] == 'reply':
+            raw_message = raw_message.replace(f"[CQ:reply,id={item['data']['id']}]", "", 1)
+            break
+    for item in message:
+        if item['type'] == 'at' and str(item['data']['qq']) == str(self_id):
+            raw_message = raw_message.replace(
+                f"[CQ:at,qq={item['data']['qq']},name={item['data'].get('name', '')}]","",1,)
+            break
+    return raw_message.strip()
 
 def runchat(i,qqg,input,sender,self_id):
                                     global uset,messages
@@ -359,8 +378,10 @@ def run_r(rev):
                                 elif atted and permc(qqg,"ai")and not rev.get('post_type','message') == "message_sent":
                                     uset = uset+1
                                     attext = attext.strip()
-                                    threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
-                                    threadc.start()    
+                                    attext = process_message(rev)
+                                    if "[CQ:markdown," not in attext:
+                                        threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
+                                        threadc.start()    
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin"):
                                     wake()

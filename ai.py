@@ -54,23 +54,6 @@ if not(allow_draw):
         {
             "type": "function",
             "function": {
-                "name": "getpeople",
-                "description": "get people list in the group(need groupid,you need first call 'getgroup' to get it,WARN ONLY accepted GROUP numbers)(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)(WARNING you can not output more than 50 people)",
-                "parameters": {
-                    "type": "object",
-                    "required": ["group"],
-                    "properties": {
-                        "group": {
-                            "type": "string",
-                            "description": "input groupid and return people in this group"
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
                 "name": "getgroup",
                 "description": "get current you are talking with groupid(function getpeople need this!)",
                 "parameters": {
@@ -143,6 +126,48 @@ if not(allow_draw):
         {
             "type": "function",
             "function": {
+                "name": "getpeople",
+                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. Target (role, name, user_id), 2. Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id) If you do not fill in the field, return all (recommended)",
+                "parameters": {
+                    "type": "object",
+                    "required": ["group"],
+                    "properties": {
+                        "group": {
+                            "type": "string",
+                            "description": "input groupid and return people in this group"
+                        },
+                        "filter_target": {
+                            "type": "string",
+                            "description": """Target (role, name, user_id)"""
+                        },
+                        "filter_cond":{
+                            "type": "string",
+                            "description": """Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id)"""
+                        },
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "getgroupinfo",
+                "description": "input groupid and return group info",
+                "parameters": {
+                    "type": "object",
+                    "required": ["group"],
+                    "properties": {
+                        "group": {
+                            "type": "string",
+                            "description": "input groupid and return group info"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "getdeltpeopleinfo",
                 "description": "get more people info",
                 "parameters": {
@@ -186,7 +211,7 @@ else:
             "type": "function",
             "function": {
                 "name": "getpeople",
-                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people)",
+                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. Target (role, name, user_id), 2. Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id) If you do not fill in the field, return all (recommended)",
                 "parameters": {
                     "type": "object",
                     "required": ["group"],
@@ -194,6 +219,31 @@ else:
                         "group": {
                             "type": "string",
                             "description": "input groupid and return people in this group"
+                        },
+                        "filter_target": {
+                            "type": "string",
+                            "description": """Target (role, name, user_id)"""
+                        },
+                        "filter_cond":{
+                            "type": "string",
+                            "description": """Judgment condition (when target = role, the judgment condition can only be admin (administrator), member (non-admin), when target = name, the judgment condition is nickname, title, whether the card contains the target, when the target = user_id, the judgment condition is target = user_id)"""
+                        },
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "getgroupinfo",
+                "description": "input groupid and return group info",
+                "parameters": {
+                    "type": "object",
+                    "required": ["group"],
+                    "properties": {
+                        "group": {
+                            "type": "string",
+                            "description": "input groupid and return group info"
                         }
                     }
                 }
@@ -296,7 +346,7 @@ else:
             "type": "function",
             "function": {
                 "name": "getdeltpeopleinfo",
-                "description": "get more people info",
+                "description": "get more personal(one person) info",
                 "parameters": {
                     "type": "object",
                     "required": ["groupid","userid"],
@@ -318,7 +368,6 @@ else:
 self_id = "0"
 group = queue.Queue(maxsize=3)
 send = queue.Queue(maxsize=3)
-
 def weather(arguments: Dict[str, Any]) -> Any:
     adm1 = arguments["adm1"]
     adm2 = arguments["adm2"]
@@ -365,7 +414,9 @@ def getp(arguments: Dict[str, Any]):
     payl0 = {"group_id":qqg}
     ttip = tip + ":" + str(tport)
     response = requests.post(ttip+"/get_group_member_list", json=payl0)
-    extracted_data = [
+    cond =arguments.get("filter_cond")
+    target = arguments.get("filter_target")
+    wp_d = [
     {
         "nickname": item["nickname"],
         "user_id": item["user_id"],
@@ -375,6 +426,34 @@ def getp(arguments: Dict[str, Any]):
     }
     for item in response.json()["data"]
     ]
+    print(wp_d)
+    extracted_data = []
+    if cond != None:
+        if target != None:
+            if target == "role":
+                if cond == "admin":
+                    for item in wp_d:
+                        if "admin" == str(item["role"]) or "owner" == str(item["role"]):
+                            extracted_data.append(item)
+                            print(item)
+                elif cond == "member": 
+                    for item in wp_d:
+                        if "member" == str(item["role"]):
+                            extracted_data.append(item)
+            elif target == "name":
+                for item in wp_d:
+                    if cond in item["nickname"] or cond in item["card"] or cond in item["title"]:
+                        extracted_data.append(item)
+            elif target == "user_id":
+                for item in wp_d:
+                    if cond == str(item["user_id"]):
+                        extracted_data.append(item)
+            else:
+                extracted_data = wp_d
+        else:
+            extracted_data = wp_d
+    else:
+        extracted_data = wp_d
     return extracted_data
 def getg(arguments: Dict[str, Any]):
     try:
@@ -396,6 +475,13 @@ def get_s(arguments: Dict[str, Any]):
         print("sender empty!return 0....")
         return 0
 
+def getgi(arguments: Dict[str, Any]):
+    adm1 = arguments["group"]
+    payl0 = {"group_id":adm1}
+    ttip = tip + ":" + str(tport)
+    response = requests.post(ttip+"/get_group_info", json=payl0)
+    return response.json()
+
 tool_map = {
     "time" : gtime,
     "weather" : weather,
@@ -405,6 +491,7 @@ tool_map = {
     "getsender":get_s,
     "getmyself":getm,
     "getdeltpeopleinfo":gdpi,
+    "getgroupinfo":getgi,
 }
 def chat(messages,input,qqg,sender,self_ids):
     global self_id
