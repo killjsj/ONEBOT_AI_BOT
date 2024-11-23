@@ -246,7 +246,7 @@ def draw(prompt: str, neg_prompt: str) -> str:
 
 tool_map = [gtime, weather, draw,] if allow_draw else [gtime, weather,]
 
-def chat(messages,input):
+def chat(messages,input,qqg):
     global pipe,tokenizer,model
     messages.append({
 		"role": "user",

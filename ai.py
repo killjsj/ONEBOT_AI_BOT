@@ -1,7 +1,10 @@
 import os
+import queue
 import time
 from openai import OpenAI
 import json
+
+import requests
 import tools
 from typing import *
 
@@ -10,6 +13,10 @@ with open('config.json','r+') as f:
     config = json.load(f)
 aikey = config["secert"]["aikey"]
 allow_draw = config["allow_ai_draw"]
+fip = config["network"]["f"]["ip"]
+tip = config["network"]["t"]["ip"]
+tport = config["network"]["t"]["port"]
+fport = config["network"]["f"]["port"]
 url = config["online"]["aiurl"]
 lang = config["lang"]
 model = config["online"]["model"]
@@ -32,6 +39,40 @@ if not(allow_draw):
                         "nothing": {
                             "type": "string",
                             "description": "just anything (JUST A TIME)"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "getpeople",
+                "description": "get people in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
+                "parameters": {
+                    "type": "object",
+                    "required": ["group"],
+                    "properties": {
+                        "group": {
+                            "type": "string",
+                            "description": "input groupid and return people in this group"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "time",
+                "description": "get current you are talking with groupid(function getpeople need this!)",
+                "parameters": {
+                    "type": "object",
+                    "required": [],
+                    "properties": {
+                        "nothing": {
+                            "type": "string",
+                            "description": "just anything"
                         }
                     }
                 }
@@ -90,11 +131,45 @@ else:
                 "description": "get current time (formatted as YYYY-MM-DD HH:MM:SS)",
                 "parameters": {
                     "type": "object",
-                    "required": ["query"],
+                    "required": [],
                     "properties": {
                         "nothing": {
                             "type": "string",
                             "description": "just anything (JUST A TIME)"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "getpeople",
+                "description": "get people in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
+                "parameters": {
+                    "type": "object",
+                    "required": ["group"],
+                    "properties": {
+                        "group": {
+                            "type": "string",
+                            "description": "input groupid and return people in this group"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "time",
+                "description": "get current you are talking with groupid(function getpeople need this!)",
+                "parameters": {
+                    "type": "object",
+                    "required": [],
+                    "properties": {
+                        "nothing": {
+                            "type": "string",
+                            "description": "just anything"
                         }
                     }
                 }
@@ -144,7 +219,7 @@ else:
         }
     ]
 
-
+group = queue.Queue(maxsize=3)
 
 def weather(arguments: Dict[str, Any]) -> Any:
     adm1 = arguments["adm1"]
@@ -176,13 +251,36 @@ def draw(arguments: Dict[str, Any]) :
     drew.ai(adm1,adm2)
     return "(((./wdads.png)))"
 
+def getp(arguments: Dict[str, Any]):
+    qqg = arguments["group"]
+    payl0 = {"group_id":qqg}
+    ttip = tip + ":" + str(tport)
+    response = requests.post(ttip+"/get_group_member_list", json=payl0)
+    extracted_data = [
+    {
+        "nickname": item["nickname"],
+        "user_id": item["user_id"],
+        "card": item["card"],
+        "title": item["title"]
+    }
+    for item in response.json()["data"]
+    ]
+    return extracted_data
+def getg(arguments: Dict[str, Any]):
+    try:
+        return group.get(False)
+    except queue.Empty:
+        print("qqg empty!return 0....")
+        return 0
 
 tool_map = {
     "time" : gtime,
     "weather" : weather,
     "draw":draw,
+    "getpeople":getp,
+    "getgroup":getg
 }
-def chat(messages,input):
+def chat(messages,input,qqg):
     messages.append({
 		"role": "user",
 		"content": input,	
@@ -201,16 +299,21 @@ def chat(messages,input):
         if finish_reason == "tool_calls": 
             messages.append(choice.message) 
             for tool_call in choice.message.tool_calls: 
-                tool_call_name = tool_call.function.name
-                tool_call_arguments = json.loads(tool_call.function.arguments) 
-                tool_function = tool_map[tool_call_name] 
-                tool_result = tool_function(tool_call_arguments)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "name": tool_call_name,
-                    "content": json.dumps(tool_result), 
-                })
+                try:
+                    group.put(qqg,False)
+                except queue.Full:
+                    print("qqg full! skipping put")
+                finally:
+                    tool_call_name = tool_call.function.name
+                    tool_call_arguments = json.loads(tool_call.function.arguments) 
+                    tool_function = tool_map[tool_call_name] 
+                    tool_result = tool_function(tool_call_arguments)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": tool_call_name,
+                        "content": json.dumps(tool_result), 
+                    })
     
     assistant_message = completion.choices[0].message
     messages.append(assistant_message)

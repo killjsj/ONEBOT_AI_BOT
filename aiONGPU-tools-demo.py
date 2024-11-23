@@ -9,14 +9,18 @@ viwe image-7.png
 
 
 import os
+import queue
 import time
 from typing import *
 import json
+import requests
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,pipeline
 import importlib
 import drew
 import tools  # support amd/intel gpu
+
+group = queue.Queue(maxsize=3)
 
 spec = importlib.util.find_spec('torch_directml')
 found_directml = spec is not None
@@ -31,6 +35,10 @@ aikey = config["secert"]["aikey"]
 allow_draw = config["allow_ai_draw"]
 lang = config["lang"]
 maxtoken = int(config["maxtokens"])
+fip = config["network"]["f"]["ip"]
+tip = config["network"]["t"]["ip"]
+tport = config["network"]["t"]["port"]
+fport = config["network"]["f"]["port"]
 model_name = "DiTy/gemma-2-9b-it-function-calling-GGUF"  # config["local"]["model"]
 cache_dir = "./model_cache"
 pipe = None
@@ -118,10 +126,39 @@ def draw(prompt: str, neg_prompt: str) -> str:
     drew.ai(prompt, neg_prompt)  # Assuming 'drew.ai' is a function that generates an image
     return "(((./wdads.png)))"
 
+def getp(group):
+    """
+    get people in the group(if you want to at somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(in return data) into message\nWarn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)
+    
+    Args:
+        group:input groupid and return people in this group
+    """
+    qqg = group
+    payl0 = {"group_id":qqg}
+    ttip = tip + ":" + str(tport)
+    response = requests.post(ttip+"/get_group_member_list", json=payl0)
+    extracted_data = [
+    {
+        "nickname": item["nickname"],
+        "user_id": item["user_id"],
+        "card": item["card"],
+        "title": item["title"]
+    }
+    for item in response.json()["data"]
+    ]
+    return extracted_data
+def getg():
+    """
+    get current you are talking with groupid(function getpeople need this!)
+    """
+    try:
+        return group.get(False)
+    except queue.Empty:
+        print("qqg empty!return 0....")
+        return 0
+tool_map = [gtime, weather, draw,getp,getg] if allow_draw else [gtime, weather,getp,getg]
 
-tool_map = [gtime, weather, draw] if allow_draw else [gtime, weather]
-
-def chat(messages, input):
+def chat(messages, input,qqg):
     global tokenizer, model,pipe
     print("message:",messages," input:",input)
     if isinstance(input,dict):
@@ -172,6 +209,10 @@ def chat(messages, input):
     function_response = ''
     generated_response = response
     if generated_response[:len("Function call: ")] == "Function call: ":
+        try:
+            group.put(qqg,False)
+        except queue.Full:
+            print("qqg full! skipping put")
         json_data = generated_response.replace("Function call: ",'')
         tool_call_arguments = json.loads(json_data) 
         tool_function = tool_call_arguments["name"] 

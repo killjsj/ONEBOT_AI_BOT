@@ -39,7 +39,7 @@ cache_dir = "./model_cache"
 pipe = None
 tokenizer = None
 model = None
-def chat(messages, input=None):
+def chat(messages, input=None, qqg=None):
     '''
     running ai chat
 

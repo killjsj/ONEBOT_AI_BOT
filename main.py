@@ -184,7 +184,7 @@ def runchat(i,qqg,input):
                                     if ng not in messages:
                                         messages[ng] = [{"role": "system", "content": readprompt(langprom,mode)}]
                                     
-                                    response,messages[str(qqg)] = chat(messages.get(str(qqg)),comm)
+                                    response,messages[str(qqg)] = chat(messages.get(str(qqg)),comm,qqg)
                                     
                                     if i >= 11:
                                         messages = clearmessage(qqg,messages)
