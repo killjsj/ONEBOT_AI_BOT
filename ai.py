@@ -9,6 +9,11 @@ import requests
 import tools
 from typing import *
 
+def decode_unicode_escapes(s: str) -> str:
+    try:
+        return bytes(s, 'utf-8').decode('unicode_escape')
+    except:
+        return s
 
 with open('config.json','r+') as f:
     config = json.load(f)
@@ -380,7 +385,13 @@ def getg(arguments: Dict[str, Any]):
 
 def get_s(arguments: Dict[str, Any]):
     try:
-        return send.get(False)
+        sender_data = send.get(False)
+        if isinstance(sender_data, dict):
+            for key in ['nickname', 'card', 'title']:
+                if key in sender_data and isinstance(sender_data[key], str):
+                    sender_data[key] = decode_unicode_escapes(sender_data[key])
+            print("Processed sender data:", sender_data)
+        return sender_data
     except queue.Empty:
         print("sender empty!return 0....")
         return 0
@@ -419,26 +430,33 @@ def chat(messages,input,qqg,sender,self_ids):
                 tool_call_name = tool_call.function.name
                 try:
                     if tool_call_name == "getgroup":
-                        group.put(qqg,False)
+                        group.put(qqg, False)
                 except queue.Full:
                     print("qqg full! skipping put")
                 try:
                     if tool_call_name == "getsender":
-                        send.put(sender,False)
+                        # 确保发送者信息正确编码
+                        if isinstance(sender, dict):
+                            for key in ['nickname', 'card', 'title']:
+                                if key in sender and isinstance(sender[key], str):
+                                    sender[key] = decode_unicode_escapes(sender[key])
+                        send.put(sender, False)
                 except queue.Full:
                     print("sender full! skipping put")
+                
                 tool_call_arguments = json.loads(tool_call.function.arguments) 
                 tool_function = tool_map[tool_call_name] 
                 tool_result = tool_function(tool_call_arguments)
-                print("calling ",tool_call_name," args:",tool_call_arguments," result:",tool_result)
+                print("calling ", tool_call_name, " args:", tool_call_arguments, " result:", tool_result)
+                
+                # 修改 JSON 序列化部分
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "name": tool_call_name,
-                    "content": json.dumps(tool_result), 
+                    "content": json.dumps(tool_result, ensure_ascii=False)  # 添加 ensure_ascii=False
                 })
     
     assistant_message = completion.choices[0].message
     messages.append(assistant_message)
-    print(messages)
     return (choice.message.content,messages)
