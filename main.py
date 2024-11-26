@@ -260,7 +260,7 @@ def run_r(rev):
                                                     send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable"})
                                             except ValueError:
                                                 send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable,string not acceptable"})                 
-                                elif '/server' in rev['raw_message'].lower() or rev['raw_message'].lower() == "cx":
+                                elif '/server' in attext.lower() or attext.lower() == "cx":
                                     with open('config.json','r+') as f:
                                         config = json.load(f)
                                     ms = ''
