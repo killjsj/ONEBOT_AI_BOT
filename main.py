@@ -223,7 +223,8 @@ def run_r(rev):
                                 rm = rev.get('message')
                                 if rm == None:
                                     atted = True
-                                    attext = rev.get("raw_message")
+                                    if "[CQ:file," not in rev["raw_message"]:
+                                        attext = rev['raw_message']
                                 else:
                                      for item in rm:
                                         if item.get('type') == 'at' and 'data' in item:
@@ -260,7 +261,7 @@ def run_r(rev):
                                                     send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable"})
                                             except ValueError:
                                                 send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable,string not acceptable"})                 
-                                elif '/server' in attext.lower() or attext.lower() == "cx":
+                                elif rev['raw_message'].lower().startswith('/server') or rev['raw_message'].lower().startswith("cx"):
                                     with open('config.json','r+') as f:
                                         config = json.load(f)
                                     ms = ''
