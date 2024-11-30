@@ -1,43 +1,29 @@
 re = 0
+import time
 from bs4 import BeautifulSoup as bs
 import requests
 def getslserver(pb) -> dict:
     print(pb)
     global re
+    post_params = {
+    "search": "",
+    "countryFilter": [],
+    "hideEmptyServer": False,
+    "hideFullServer": False,
+    "friendlyFire": "null",
+    "whitelist": "null",
+    "modded": "null",
+    "sort": "PLAYERS_DESC"
+    }
     try:
-        sl = requests.get("https://kigen.co/scpsl/browser.php",{"table":"y"})
-        html = sl.text
-        soup = bs(html, 'html.parser')
-        table = soup.find('table')
-        col = []
-        for row in table.find_all('tr'):
-            row_data = []
-            for cell in row.find_all('td'):
-                row_data.append(cell.text.strip()) 
-            col.append(row_data)  
-        print(col)
-        column_indices = []
-        printed_rows = set()
-        for now in pb:
-            print(now)
-            for i, row in enumerate(col):
-                for j, value in enumerate(row):
-                    if value == now:
-                        column_indices.append(j)
-            if column_indices:
-                print(f"pbin=",now)
-                
-                for index in column_indices:
-                    for row in col:
-                        if len(row) > index:
-                            if row[index] == now:
-                                row_tuple = tuple(row)
-                                if row_tuple not in printed_rows:
-                                    print(row_tuple)
-                                    printed_rows.add(row_tuple)
-            
-            else:
-                continue
+        printed_rows = []
+        post_response = requests.post("https://backend.scplist.kr/api/servers", json=post_params)
+        a = post_response.json()
+        for n in a["servers"]:
+            if n["pastebin"] in pb:
+                print(n)
+                printed_rows.append(n)
+
         if printed_rows == set():
             print("服务器死了 好似")
             return "404"

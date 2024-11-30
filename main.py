@@ -32,7 +32,7 @@ lang = config["lang"]
 HttpResponseHeader = '''HTTP/1.1 200 OK\r\n
 Content-Type: text/html\r\n\r\n
 '''
-from wakeonlan import send_magic_packet #allow remote wakeup (if you dont need it,change wakeup true to false) this feature will remove at next version
+# from wakeonlan import send_magic_packet #allow remote wakeup (if you dont need it,change wakeup true to false) this feature will remove at next version
 #waiting for muilt lang
 help_msg = f"""---bot help---
 -/config        -修改机器人
@@ -83,7 +83,7 @@ langprom = os.path.join('lang', f'prompt_{lang}.txt')
 messages = {}
 request_queue = queue.Queue()
 file_content_dict = {}
-def permc(id,permneed):
+def permc(id,permneed,qqg):
     global config
     
     with open('config.json','r+') as f:
@@ -142,8 +142,8 @@ def request_to_json(msg):
 def wake():
     if wakeup:
         print("WOL")
-        send_msg({'msg_type':"private",'number':rev['user_id'],'msg':"WOL started"})
-        send_magic_packet(wake_mac)
+        # send_msg({'msg_type':"private",'number':rev['user_id'],'msg':"WOL started"})
+        # send_magic_packet(wake_mac)
 
 def send_msg(resp_dict):
     global tip,tport
@@ -208,7 +208,7 @@ def runchat(i,qqg,input,sender,self_id):
                                         messages = clearmessage(qqg,messages)
                                     send_msg({'msg_type':'group','number':qqg,'msg':user+response})
 def run_r(rev):
-                            global uset,qqg,messages,config,mode,self_id
+                            global uset,messages,config,mode,self_id
                             atted = False
                             attext = rev.get("raw_message")
                             print(rev.get('self_id',0))
@@ -271,18 +271,19 @@ def run_r(rev):
                                             ms = mcserver.get_java_server_info(ip,lang)
                                         else:
                                             sl_pb = config["group"][str(qqg)]["sl_pb"]
-                                            server = slget.getslserver(sl_pb) #sl pastebin AND WAITING FOR REWRITE
+                                            server = slget.getslserver(sl_pb) #sl pastebin
                                             ms = ""
                                             if server != "404":
                                                 for no in server:
                                                     def remove_html_tags(text):
                                                         clean_text = re.sub(r'(?i)<[^>]+>', '', text)
                                                         return clean_text
-                                                    no = [remove_html_tags(item) for item in no]
+                                                    # no = [remove_html_tags(item) for item in no]
+                                                    no['info'] = remove_html_tags(no['info'])
                                                     if lang == 'zh':
-                                                        ms = ms + no[3] + " 玩家数:" + no[5] +' ip:'+no[0]+"\n"
+                                                        ms = ms + no["info"] + " 玩家数:" + no["players"] +' ip:'+str(no["ip"])+":"+str(no["port"]) +"\n"
                                                     elif lang == 'en':
-                                                        ms = ms + no[3] + " players:" + no[5] +' ip:'+no[0] +"\n"
+                                                        ms = ms + no["info"] + " players:" + no["players"] +' ip:'+str(no["ip"])+":"+str(no["port"])+"\n"
                                             elif server == "500":
                                                 if lang == 'zh':
                                                     ms = "内部错误 可能机器人网络问题 请稍后重试"
@@ -330,7 +331,7 @@ def run_r(rev):
                                 elif '/help' in rev['raw_message']:
                                     print("/help")
                                     send_msg({'msg_type':"group",'number':qqg,'msg':help_msg})
-                                elif '/config' in rev['raw_message'].lower().lstrip()[:7] and permc(str(rev['user_id']),"admin"):
+                                elif '/config' in rev['raw_message'].lower().lstrip()[:7] and permc(str(rev['user_id']),"admin",qqg):
                                     command = rev['raw_message'].lstrip()[7:].split()
                                     print(command)
                                     if command[0] == "group":
@@ -376,14 +377,14 @@ def run_r(rev):
                                                     send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})                                          
                                         with open('config.json','w+') as f:
                                             json.dump(config,f,indent=4)
-                                elif atted and permc(qqg,"ai")and not rev.get('post_type','message') == "message_sent":
+                                elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent":
                                     uset = uset+1
                                     attext = attext.strip()
                                     attext = process_message(rev)
                                     threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
                                     threadc.start()    
                             elif rev.get('message_type','group') == "private":
-                                if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin"):
+                                if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin",0):
                                     wake()
 
 
