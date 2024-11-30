@@ -24,9 +24,10 @@ def getslserver(pb) -> dict:
                 print(n)
                 printed_rows.append(n)
 
-        if printed_rows == set():
+        if printed_rows == []:
             print("服务器死了 好似")
             return "404"
+        
         return printed_rows
     except:
         if re == 0:
