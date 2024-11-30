@@ -380,9 +380,11 @@ def run_r(rev):
                                 elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent":
                                     uset = uset+1
                                     attext = attext.strip()
+                                    
                                     attext = process_message(rev)
-                                    threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
-                                    threadc.start()    
+                                    if attext != "":
+                                        threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
+                                        threadc.start()    
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin",0):
                                     wake()
