@@ -200,7 +200,10 @@ import subprocess
 
 def restart_program():
     command = sys.executable + ' ' + __file__
+    httpd.server_close()
+    httpd.shutdown_request()
     httpd.shutdown()
+    sleep(1)
     sys.exit(subprocess.call(command, shell=True))
 seq = {}
 def runchat(i,qqg,input,sender,self_id):
@@ -409,9 +412,9 @@ def run_r(rev):
                                     sp = True
                                     threadc = threading.Thread(target=tensecond)
                                     threadc.start()   
-                                    send_msg({'msg_type':'group','number':qqg,'msg':"200 OK STOP IN 10 SECOND"})
+                                    send_msg({'msg_type':'group','number':qqg,'msg':"200 OK STOP 10 SECOND"})
                                 elif '/restart' in rev['raw_message'].lower().lstrip()[:9] and permc(str(rev['user_id']),"admin",qqg):
-                                    send_msg({'msg_type':'group','number':qqg,'msg':"200 OK RESTARTING!!!!"})
+                                    send_msg({'msg_type':'group','number':qqg,'msg':"200 OK RESTARTING IN 1S!!!!"})
                                     restart_program()
                                 elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent" and not sp:
                                     uset = uset+1
