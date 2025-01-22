@@ -201,7 +201,7 @@ import subprocess
 def restart_program():
     command = sys.executable + ' ' + __file__
     httpd.server_close()
-    httpd.shutdown_request()
+    # httpd.shutdown_request()
     httpd.shutdown()
     sleep(1)
     sys.exit(subprocess.call(command, shell=True))
