@@ -2,7 +2,7 @@ re = 0
 import time
 from bs4 import BeautifulSoup as bs
 import requests
-def getslserver(pb) -> dict:
+def getslserver(pb) -> list:
     print(pb)
     global re
     post_params = {

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # SHIT 小心观看
+from datetime import datetime
 import queue
 from typing import *
 import re
@@ -14,6 +15,7 @@ import json
 import http.server
 import threading
 from time import sleep
+# from wakeonlan import send_magic_packet
 global rev_json
 rev_json = None
 global uset
@@ -32,7 +34,7 @@ lang = config["lang"]
 HttpResponseHeader = '''HTTP/1.1 200 OK\r\n
 Content-Type: text/html\r\n\r\n
 '''
-# from wakeonlan import send_magic_packet #allow remote wakeup (if you dont need it,change wakeup true to false) this feature will remove at next version
+from wakeonlan import send_magic_packet #allow remote wakeup (if you dont need it,change wakeup true to false) this feature will remove at next version
 #waiting for muilt lang
 help_msg = f"""---bot help---
 -/config        -修改机器人
@@ -50,7 +52,7 @@ help_msg = f"""---bot help---
 """
 
 wakeup = True
-wake_mac = '20.31.11.1A.07.CA' # input youe mac
+wake_mac = '20-31-11-1A-07-CA' # input youe mac
 
 def readprompt(file_from: str, target_i: int = 0):
     with open(file_from, 'r', encoding='utf-8') as file:
@@ -142,8 +144,8 @@ def request_to_json(msg):
 def wake():
     if wakeup:
         print("WOL")
-        # send_msg({'msg_type':"private",'number':rev['user_id'],'msg':"WOL started"})
-        # send_magic_packet(wake_mac)
+        send_msg({'msg_type':"private",'number':rev['user_id'],'msg':"WOL started"})
+        send_magic_packet(wake_mac)
 
 def send_msg(resp_dict):
     global tip,tport
@@ -194,18 +196,29 @@ def process_message(data):
             break
     return raw_message.strip()
 
+seq = {}
+
 def runchat(i,qqg,input,sender,self_id):
-                                    global uset,messages
+                                    global uset,messages,seq
                                     ng = str(qqg)
-                                    comm = input
+                                    if datetime.now().second == 30 or datetime.now().second == 0:
+                                         seq = {}
+                                    if ng not in seq:
+                                        seq[ng] = 1
+                                    else:
+                                         seq[ng] += 1
                                     user =  '[CQ:at,qq=' + str(rev['user_id']) + '] '
+                                    
+                                    if seq[ng] > int(config["seq"]):
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"429 Too Many Requests"})
+                                        return
+                                    comm = input
                                     if ng not in messages:
                                         messages[ng] = [{"role": "system", "content": readprompt(langprom,mode)}]
-                                    
                                     response,messages[str(qqg)] = chat(messages.get(str(qqg)),comm,qqg,sender,str(self_id))
-                                    
-                                    if i >= 11:
+                                    if i > 30:
                                         messages = clearmessage(qqg,messages)
+                                        i = 0
                                     send_msg({'msg_type':'group','number':qqg,'msg':user+response})
 def run_r(rev):
                             global uset,messages,config,mode,self_id
@@ -377,6 +390,10 @@ def run_r(rev):
                                                     send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})                                          
                                         with open('config.json','w+') as f:
                                             json.dump(config,f,indent=4)
+                                    elif command[0] == "seq":
+                                        config["seq"] = int(command[1])
+                                        with open('config.json','w+') as f:
+                                            json.dump(config,f,indent=4)
                                 elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent":
                                     uset = uset+1
                                     attext = attext.strip()
@@ -385,6 +402,8 @@ def run_r(rev):
                                     if attext != "":
                                         threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
                                         threadc.start()    
+                                        if uset> 30:
+                                            uset = 0
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin",0):
                                     wake()
