@@ -220,8 +220,14 @@ def runchat(i,qqg,input,sender,self_id):
                                         messages = clearmessage(qqg,messages)
                                         i = 0
                                     send_msg({'msg_type':'group','number':qqg,'msg':user+response})
+sp = False
+def tensecond():
+     global sp
+     sp = True
+     sleep(10)
+     sp = False
 def run_r(rev):
-                            global uset,messages,config,mode,self_id
+                            global uset,messages,config,mode,self_id,sp
                             atted = False
                             attext = rev.get("raw_message")
                             print(rev.get('self_id',0))
@@ -394,7 +400,13 @@ def run_r(rev):
                                         config["seq"] = int(command[1])
                                         with open('config.json','w+') as f:
                                             json.dump(config,f,indent=4)
-                                elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent":
+                                elif '/estop' in rev['raw_message'].lower().lstrip()[:6]:
+                                    sp = True
+                                    threadc = threading.Thread(target=tensecond)
+                                    threadc.start()   
+                                    send_msg({'msg_type':'group','number':qqg,'msg':"200 OK STOP IN 10 SECOND"})
+                                    
+                                elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent" and not sp:
                                     uset = uset+1
                                     attext = attext.strip()
                                     
