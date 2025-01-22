@@ -200,6 +200,7 @@ import subprocess
 
 def restart_program():
     command = sys.executable + ' ' + __file__
+    httpd.shutdown()
     sys.exit(subprocess.call(command, shell=True))
 seq = {}
 def runchat(i,qqg,input,sender,self_id):
