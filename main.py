@@ -409,7 +409,7 @@ def run_r(rev):
                                     threadc = threading.Thread(target=tensecond)
                                     threadc.start()   
                                     send_msg({'msg_type':'group','number':qqg,'msg':"200 OK STOP IN 10 SECOND"})
-                                elif '/restart' in rev['raw_message'].lower().lstrip()[:6] and permc(str(rev['user_id']),"admin",qqg):
+                                elif '/restart' in rev['raw_message'].lower().lstrip()[:9] and permc(str(rev['user_id']),"admin",qqg):
                                     send_msg({'msg_type':'group','number':qqg,'msg':"200 OK RESTARTING!!!!"})
                                     restart_program()
                                 elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent" and not sp:
