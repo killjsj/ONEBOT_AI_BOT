@@ -209,14 +209,12 @@ seq = {}
 def runchat(i,qqg,input,sender,self_id):
                                     global uset,messages,seq
                                     ng = str(qqg)
-                                    if datetime.now().second == 30 or datetime.now().second == 0:
-                                         seq = {}
                                     if ng not in seq:
                                         seq[ng] = 1
                                     else:
-                                         seq[ng] += 1
+                                        seq[ng] += 1
                                     user =  '[CQ:at,qq=' + str(rev['user_id']) + '] '
-                                    
+                                    print(seq)
                                     if seq[ng] > int(config["seq"]):
                                         send_msg({'msg_type':'group','number':qqg,'msg':"429 Too Many Requests"})
                                         return
@@ -234,13 +232,24 @@ def tensecond():
      sp = True
      sleep(10)
      sp = False
+{"post_type":"notice",
+"notice_type":"group_increase",
+"operator_id":3500197013,
+"sub_type":"approve",
+"group_id":953504581,
+"user_id":548375073}
 def run_r(rev):
                             global uset,messages,config,mode,self_id,sp
                             atted = False
                             attext = rev.get("raw_message")
                             print(rev.get('self_id',0))
                             self_id = str(rev.get('self_id',0))
-                            if rev.get('message_type')=="group":
+                            if rev.get('post_type') == "notice":
+                                print(rev.get('notice_type'))
+                                if rev.get('notice_type') == "group_increase":
+                                    threadc = threading.Thread(target=runchat,args=(0,rev.get("group_id"),"有新人"+str(rev.get("user_id"))+"(qid)入群 请欢迎它",{"nickname":"系统自动提示","title":"","card":""},self_id,))
+                                    threadc.start()   
+                            elif rev.get('message_type')=="group":
                                 sender = rev['sender']
                                 try:
                                     roleq = sender['role']
@@ -430,14 +439,26 @@ def run_r(rev):
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin",0):
                                     wake()
 
-
+def seqc():
+    while True:
+        if datetime.now().second == 30 or datetime.now().second == 0:
+                                            seq = {}
+        if datetime.now().second == 31 or datetime.now().second == 59:
+                                            seq = {}
+        if datetime.now().second ==29 or datetime.now().second == 1:
+                                            seq = {}
+        sleep(0.5)
+     
 
 
 if __name__ == '__main__':
         server_thread = threading.Thread(target=start_server)
         server_thread.start()
+        server_thread = threading.Thread(target=seqc)
+        server_thread.start()
         lang_check(lang)
         while True:
+            
             rev = request_queue.get()
             try:
                 if rev == None and rev == {}:
@@ -450,7 +471,6 @@ if __name__ == '__main__':
             except KeyError:
                 print(rev)
             finally:
-                            if rev.get('post_type','message') == "message" or rev.get('post_type','message') == "message_sent":
                                 try:
                                     threadc = threading.Thread(target=run_r,args=(rev,))
                                     threadc.start() 
