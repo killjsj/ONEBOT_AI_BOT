@@ -81,6 +81,7 @@ def lang_check(lang):
     else:
         raise Exception('Not support lang:' + lang)
 mode = 0
+la = 0
 langprom = os.path.join('lang', f'prompt_{lang}.txt')
 messages = {}
 request_queue = queue.Queue()
@@ -213,7 +214,11 @@ def runchat(i,qqg,input,sender,self_id):
                                         seq[ng] = 1
                                     else:
                                         seq[ng] += 1
-                                    user =  '[CQ:at,qq=' + str(rev['user_id']) + '] '
+                                        user =''
+                                    if sender.get("group","") == "add":
+                                        user =  ''
+                                    else:
+                                        user =  '[CQ:at,qq=' + str(rev['user_id']) + '] '   
                                     print(seq)
                                     if seq[ng] > int(config["seq"]):
                                         send_msg({'msg_type':'group','number':qqg,'msg':"429 Too Many Requests"})
@@ -225,21 +230,19 @@ def runchat(i,qqg,input,sender,self_id):
                                     if i > 30:
                                         messages = clearmessage(qqg,messages)
                                         i = 0
-                                    send_msg({'msg_type':'group','number':qqg,'msg':user+response})
+                                    outp = user+response
+                                    for a in config["output_blacklist"]:
+                                        if a in outp:
+                                            outp = outp.replace(a,"filtered")
+                                    send_msg({'msg_type':'group','number':qqg,'msg':outp})
 sp = False
 def tensecond():
      global sp
      sp = True
      sleep(10)
      sp = False
-{"post_type":"notice",
-"notice_type":"group_increase",
-"operator_id":3500197013,
-"sub_type":"approve",
-"group_id":953504581,
-"user_id":548375073}
 def run_r(rev):
-                            global uset,messages,config,mode,self_id,sp
+                            global uset,messages,config,mode,self_id,sp,la
                             atted = False
                             attext = rev.get("raw_message")
                             print(rev.get('self_id',0))
@@ -247,7 +250,7 @@ def run_r(rev):
                             if rev.get('post_type') == "notice":
                                 print(rev.get('notice_type'))
                                 if rev.get('notice_type') == "group_increase":
-                                    threadc = threading.Thread(target=runchat,args=(0,rev.get("group_id"),"有新人"+str(rev.get("user_id"))+"(qid)入群 请欢迎它",{"nickname":"系统自动提示","title":"","card":""},self_id,))
+                                    threadc = threading.Thread(target=runchat,args=(0,rev.get("group_id"),"有新人"+str(rev.get("user_id"))+"(qid)入群 请欢迎它",{"nickname":"系统自动提示","title":"","card":"","group":"add"},self_id,))
                                     threadc.start()   
                             elif rev.get('message_type')=="group":
                                 sender = rev['sender']
@@ -282,7 +285,7 @@ def run_r(rev):
                                         if is_number(comm[1]):
                                             try:
                                                 comm[1] = int(comm[1])
-                                                if comm[1] <= 1 and comm[1] >= 0:
+                                                if comm[1] <= int(la) and comm[1] >= 0:
                                                     mode = comm[1]
                                                     print(messages)
                                                     if str(qqg) in messages:
@@ -302,36 +305,37 @@ def run_r(rev):
                                         config = json.load(f)
                                     ms = ''
                                     if str(qqg) in config["group"]:
-                                        if config["group"][str(qqg)]["cx->mc"]:
-                                            ip = config["group"][str(qqg)]["mc_ip"]
-                                            ms = mcserver.get_java_server_info(ip,lang)
-                                        else:
-                                            sl_pb = config["group"][str(qqg)]["sl_pb"]
-                                            server = slget.getslserver(sl_pb) #sl pastebin
-                                            ms = ""
-                                            if server != "404":
-                                                for no in server:
-                                                    def remove_html_tags(text):
-                                                        clean_text = re.sub(r'(?i)<[^>]+>', '', text)
-                                                        return clean_text
-                                                    # no = [remove_html_tags(item) for item in no]
-                                                    no['info'] = remove_html_tags(no['info'])
-                                                    if lang == 'zh':
-                                                        ms = ms + no["info"] + " 玩家数:" + no["players"] +' ip:'+str(no["ip"])+":"+str(no["port"]) +"\n"
-                                                    elif lang == 'en':
-                                                        ms = ms + no["info"] + " players:" + no["players"] +' ip:'+str(no["ip"])+":"+str(no["port"])+"\n"
-                                            elif server == "500":
-                                                if lang == 'zh':
-                                                    ms = "内部错误 可能机器人网络问题 请稍后重试"
-                                                elif lang == 'en':
-                                                    ms = "500 Interal error sorry:("
-                                            elif server == "404":
-                                                if lang == 'zh':
-                                                    ms = "服务器没了 可能没搜到或者机器人网络问题"
-                                                elif lang == 'en':
-                                                    ms = "404 server offline:("
+                                        if  config["group"][str(qqg)]["cx"]:
+                                            if config["group"][str(qqg)]["cx->mc"]:
+                                                ip = config["group"][str(qqg)]["mc_ip"]
+                                                ms = mcserver.get_java_server_info(ip,lang)
                                             else:
-                                                ms = server
+                                                sl_pb = config["group"][str(qqg)]["sl_pb"]
+                                                server = slget.getslserver(sl_pb) #sl pastebin
+                                                ms = ""
+                                                if server != "404":
+                                                    for no in server:
+                                                        def remove_html_tags(text):
+                                                            clean_text = re.sub(r'(?i)<[^>]+>', '', text)
+                                                            return clean_text
+                                                        # no = [remove_html_tags(item) for item in no]
+                                                        no['info'] = remove_html_tags(no['info'])
+                                                        if lang == 'zh':
+                                                            ms = ms + no["info"] + " 玩家数:" + no["players"] +' ip:'+str(no["ip"])+":"+str(no["port"]) +"\n"
+                                                        elif lang == 'en':
+                                                            ms = ms + no["info"] + " players:" + no["players"] +' ip:'+str(no["ip"])+":"+str(no["port"])+"\n"
+                                                elif server == "500":
+                                                    if lang == 'zh':
+                                                        ms = "内部错误 可能机器人网络问题 请稍后重试"
+                                                    elif lang == 'en':
+                                                        ms = "500 Interal error sorry:("
+                                                elif server == "404":
+                                                    if lang == 'zh':
+                                                        ms = "服务器没了 可能没搜到或者机器人网络问题"
+                                                    elif lang == 'en':
+                                                        ms = "404 server offline:("
+                                                else:
+                                                    ms = server
                                     else: 
                                         if config["group"]["0"]["cx->mc"]:
                                             ip = config["group"][str(qqg)]["mc_ip"]
@@ -379,6 +383,14 @@ def run_r(rev):
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
+                                        if command[1] == "cx":  
+                                            if str(qqg) in config["group"]:
+                                                config["group"][str(qqg)]["cx"] = not(config["group"][str(qqg)]["cx"])
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server) ->" + str(config["group"][str(qqg)]["cx->mc"])})
+                                            else: 
+                                                config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                                config["group"][str(qqg)]["cx"] = not(config["group"][str(qqg)]["cx"])
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server) ->" + str(config["group"][str(qqg)]["cx->mc"])})
                                         if command[1] == "ai":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
@@ -411,12 +423,13 @@ def run_r(rev):
                                                     config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                     config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
                                                     send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})                                          
+                                        elif command[1] == "seq":
+                                            config["seq"] = int(command[2])
+                                            send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK seq(global) -> " + str(config["seq"])})                                          
+
                                         with open('config.json','w+') as f:
                                             json.dump(config,f,indent=4)
-                                    elif command[0] == "seq":
-                                        config["seq"] = int(command[1])
-                                        with open('config.json','w+') as f:
-                                            json.dump(config,f,indent=4)
+                                    
                                 elif '/estop' in rev['raw_message'].lower().lstrip()[:6] and permc(str(rev['user_id']),"admin",qqg):
                                     sp = True
                                     threadc = threading.Thread(target=tensecond)
@@ -440,6 +453,7 @@ def run_r(rev):
                                     wake()
 
 def seqc():
+    global seq
     while True:
         if datetime.now().second == 30 or datetime.now().second == 0:
                                             seq = {}
@@ -449,7 +463,18 @@ def seqc():
                                             seq = {}
         sleep(0.5)
      
-
+def read_last_prompt(file_from):
+    with open(file_from, 'r', encoding='utf-8') as file:
+        content = file.read()
+        last_prompt_index = content.rfind('```',0,len(content[:-3]))
+        if last_prompt_index == -1:
+            raise TypeError('No prompt found in the file')
+        last_prompt = content[last_prompt_index:]
+        match = re.search(r'```(\d+)', last_prompt)
+        if not match:
+            raise TypeError('No valid prompt number found in the last prompt')
+        last_prompt_number = match.group(1)
+        return last_prompt_number
 
 if __name__ == '__main__':
         server_thread = threading.Thread(target=start_server)
@@ -457,6 +482,7 @@ if __name__ == '__main__':
         server_thread = threading.Thread(target=seqc)
         server_thread.start()
         lang_check(lang)
+        la=read_last_prompt(langprom)
         while True:
             
             rev = request_queue.get()

@@ -26,8 +26,10 @@
         "aiurl":"",
         "model":""
     },
+    "output_blacklist":["2854196310"],
     "group":{
         "0":{
+            "cx":true,
             "ai":true,
             "cx->mc":false,
             "mc_ip":"",
