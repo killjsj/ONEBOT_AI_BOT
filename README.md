@@ -17,14 +17,20 @@ startuping
 open [config.json](config.json)
 ```
 {
-    "netowrk":{
-        "t":{
-            "ip":"http://127.0.0.1",
-            "port":"5700"
+        "network": {
+        "ws":{
+            "enable": false,
+            "url": "ws://"
         },
-        "f":{
-            "ip":"127.0.0.1",
-            "port":"5701"
+        "http": {
+            "t": {
+                "ip": "http://127.0.0.1",
+                "port": "5700"
+            },
+            "f": {
+                "ip": "127.0.0.1",
+                "port": "5701"
+            }
         }
     },
     "admin":[],
@@ -58,12 +64,20 @@ open [config.json](config.json)
     }
 }
 ```
+```
 network_t:  
     ip=onebot Post to ip   
     port= onebot post to port  
 network_f:  
     ip=onebot Post from ip  
     port= onebot post from port  
+ws:   
+    enable=enable websocket
+    url=websocket server url(this program is client)
+network_f:  
+    ip=onebot Post from ip  
+    port= onebot post from port  
+
 maxtokens=ai gen max tokens  
 admin=admin(you need input their id)  
 online:  
@@ -80,6 +94,7 @@ tdwf:useless
 sl_pb:your sl servers pastebin  
 "mc_ip":your mc ip  
 cx->mc:false = sl true = mc  
+```
 ## program: 
 ### ai draw: 
 when you want ai can draw,change config.json `"allow_ai_draw":false` to `"allow_ai_draw":true` 

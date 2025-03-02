@@ -1,6 +1,7 @@
 #from tkinter import Image
 import importlib
 import os
+import sys
 import time
 from diffusers import DiffusionPipeline
 import torch
@@ -11,7 +12,7 @@ if found_directml:
     import torch_directml  # type: ignore
     device = torch_directml.device()
 else:
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # !=cuda support
+    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')  # !=cuda support
 
 
 cache_dir = "./model_cache"
@@ -36,7 +37,7 @@ def ai(pro,negpro=''):
     print(current_working_directory)
     absolute_path = os.path.abspath(os.path.join(current_working_directory, "result.png"))
     os.chdir("Real-ESRGAN")
-    os.system("python inference_realesrgan.py -n RealESRGAN_x2plus -i "+absolute_path+" -o " + current_working_directory)
+    os.system(sys.executable+" inference_realesrgan.py -n RealESRGAN_x2plus -i "+absolute_path+" -o " + current_working_directory)
     os.chdir(current_working_directory)
     os.remove("result.png")
     os.rename("result_out.png","result.png")#fix shit

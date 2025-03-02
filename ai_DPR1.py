@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import os
 import queue
 import time
@@ -19,35 +18,21 @@ def decode_unicode_escapes(s: str) -> str:
 with open('config.json','r+') as f:
     config = json.load(f)
 aikey = config["secert"]["aikey"]
-allow_draw = config["allow_ai_draw"]
+allow_draw = False
+fip = config["network"]["f"]["ip"]
+tip = config["network"]["t"]["ip"]
+tport = config["network"]["t"]["port"]
+fport = config["network"]["f"]["port"]
 url = config["online"]["aiurl"]
-ws = config["network"]["ws"]["enable"]
-fip = config["network"]["http"]["f"]["ip"]
-tip = config["network"]["http"]["t"]["ip"]
-tport = config["network"]["http"]["t"]["port"]
-fport = config["network"]["http"]["f"]["port"]
-wurl = config["network"]["ws"]["url"]
 lang = config["lang"]
-model = config["online"]["model"]
+model = "deepseek-r1"
 maxtokens = int(config["maxtokens"])
-wss = None
-async def lower_send(ENDPOINT,jsons) -> dict:
-    global wurl
-    if ws:
-        async with ws.connect(wurl) as websocket:
-            await websocket.send(json.dump({"action":ENDPOINT,"params":jsons}))
-            r = await websocket.recv()
-            print(r)
-            return json.loads(r)
-    else:
-        ttip = tip + ":" + str(tport)
-        response = requests.post(ttip+"/"+ENDPOINT, json=jsons)
-        print(response.text)
-        return response.json()
+
 client = OpenAI(
     api_key = aikey, 
-    base_url = url,
+    base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1",
 )
+tool=[]
 if not(allow_draw):
     tool = [
         {
@@ -143,7 +128,7 @@ if not(allow_draw):
             "type": "function",
             "function": {
                 "name": "getpeople",
-                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. filter_cond(also known as parameter 2) When target = 'role', the filter_condcan only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
+                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. Judgment condition (also known as parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
                 "parameters": {
                     "type": "object",
                     "required": ["group"],
@@ -158,7 +143,7 @@ if not(allow_draw):
                         },
                         "filter_cond":{
                             "type": "string",
-                            "description": """filter_cond(parameter 2) When target = 'role', the filter_condcan only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
+                            "description": """Judgment condition (parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
                         },
                     }
                 }
@@ -228,7 +213,7 @@ else:
             "type": "function",
             "function": {
                 "name": "getpeople",
-                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. filter_cond(also known as parameter 2) When target = 'role', the filter_condcan only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
+                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. Judgment condition (also known as parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
                 "parameters": {
                     "type": "object",
                     "required": ["group"],
@@ -243,7 +228,7 @@ else:
                         },
                         "filter_cond":{
                             "type": "string",
-                            "description": """filter_cond(parameter 2) When target = 'role', the filter_cond can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
+                            "description": """Judgment condition (parameter 2) When target = 'role', the judgment condition can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
                         },
                     }
                 }
@@ -381,19 +366,7 @@ else:
             }
         },
     ]
-def cbu(burl,apik):
-    global client
-    if burl == "":
-        burl = url
-    if apik == "":
-        apik = aikey
-    client = OpenAI(
-        api_key = apik, 
-        base_url = burl,
-    )
-def cam(modeln):
-    global model
-    model = modeln
+
 self_id = "0"
 group = queue.Queue(maxsize=3)
 send = queue.Queue(maxsize=3)
@@ -419,8 +392,9 @@ def gdpi(arguments: Dict[str, Any]):
     adm1 = arguments["groupid"]
     adm2 = arguments["userid"]
     payl0 = {"group_id":adm1,"user_id":adm2}
-    response = asyncio.run(lower_send("get_group_member_info", payl0))
-    return response
+    ttip = tip + ":" + str(tport)
+    response = requests.post(ttip+"/get_group_member_info", json=payl0)
+    return response.json()
 
 
 def gtime(arguments: Dict[str, Any]) :
@@ -440,7 +414,8 @@ def draw(arguments: Dict[str, Any]) :
 def getp(arguments: Dict[str, Any]):
     qqg = arguments["group"]
     payl0 = {"group_id":qqg}
-    response = asyncio.run(lower_send("get_group_member_list", payl0))
+    ttip = tip + ":" + str(tport)
+    response = requests.post(ttip+"/get_group_member_list", json=payl0)
     cond =arguments.get("filter_cond")
     target = arguments.get("filter_target")
     wp_d = [
@@ -451,7 +426,7 @@ def getp(arguments: Dict[str, Any]):
         "title": item["title"],
         "role": item["role"]
     }
-    for item in response["data"]
+    for item in response.json()["data"]
     ]
     print(wp_d)
     extracted_data = []
@@ -506,8 +481,8 @@ def getgi(arguments: Dict[str, Any]):
     adm1 = arguments["group"]
     payl0 = {"group_id":adm1}
     ttip = tip + ":" + str(tport)
-    response = asyncio.run(lower_send("get_group_info", payl0))
-    return response
+    response = requests.post(ttip+"/get_group_info", json=payl0)
+    return response.json()
 
 tool_map = {
     "time" : gtime,
@@ -532,8 +507,8 @@ def chat(messages,input,qqg,sender,self_ids):
         completion = client.chat.completions.create(
             model=model,
             messages=messages,
-            temperature=0.3,
-            tools=tool, 
+            temperature=0.8,
+            # tools=tool, 
             max_tokens= None if maxtokens <= 0 else maxtokens,
         )
         choice = completion.choices[0]
@@ -570,7 +545,8 @@ def chat(messages,input,qqg,sender,self_ids):
                     "name": tool_call_name,
                     "content": json.dumps(tool_result, ensure_ascii=False)  # 添加 ensure_ascii=False
                 })
-    
+    print("completion:", completion)
     assistant_message = completion.choices[0].message
     messages.append(assistant_message)
     return (choice.message.content,messages)
+print(chat([], "HarmonyPatch 每到一个新scene时以树形打印当前scene的 每 个 子物体 并在 物体 后打印该物体有的每一个Component 保存到{scene}.txt文件内", "123456", {"user_id": "123456"}, "123456"))

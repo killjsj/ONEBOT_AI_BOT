@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 # SHIT 小心观看
+import base64
 from datetime import datetime
 import queue
+import shutil
 from typing import *
 import re
-from ai import chat
+from ai import *
 import slget
 import time
 import mcserver
 import requests
 import os
-import random
+
+import asyncio
+import websockets
+
 import json
 import http.server
 import threading
@@ -26,11 +31,14 @@ uset = 0
 with open('config.json','r+') as f:
     config = json.load(f)
 support = ['zh','en']
-fip = config["network"]["f"]["ip"]
-tip = config["network"]["t"]["ip"]
-tport = config["network"]["t"]["port"]
-fport = config["network"]["f"]["port"]
+ws = config["network"]["ws"]["enable"]
+fip = config["network"]["http"]["f"]["ip"]
+tip = config["network"]["http"]["t"]["ip"]
+tport = config["network"]["http"]["t"]["port"]
+fport = config["network"]["http"]["f"]["port"]
+wurl = config["network"]["ws"]["url"]
 lang = config["lang"]
+# sql:bool = config["sql"]
 HttpResponseHeader = '''HTTP/1.1 200 OK\r\n
 Content-Type: text/html\r\n\r\n
 '''
@@ -108,8 +116,8 @@ def is_number(s):
         return True
     except ValueError:
         return False
-
-class QQRequestHandler(http.server.BaseHTTPRequestHandler):
+wss = None
+class HTTPQQRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length).decode('utf-8')
@@ -124,30 +132,75 @@ class QQRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
         self.wfile.write(b"POST request processed.")
-def run_server(server_class=http.server.HTTPServer, handler_class=QQRequestHandler):
+def run_server(server_class=http.server.HTTPServer, handler_class=HTTPQQRequestHandler):
     global fip,fport
     fport = int(fport)
     server_address = (fip, fport) #此处由onebot服务端发送post(HTTP POST：OneBot 作为 HTTP 客户端，向用户配置的 URL 推送事件，并处理用户返回的响应)
     httpd = server_class(server_address, handler_class)
     print("POST START")
     return httpd
+async def wsserver():
+    global tip,tport,running,wss
+    running = True
+    while True:
+        # websockets.connect(f"ws://{tip}:{tport}")
+        try:
+                async with ws.connect(wurl) as websocket:
+                    wss = websocket
+                    while True:
+                        try:
+                            dat = await websocket.recv()
+                            try:
+                                reva = json.loads(dat)
+                                request_queue.put(reva) 
+                            except json.JSONDecodeError:
+                                print("Received non-JSON data:", dat)
+                                #print("raw:", rev_json['raw_message']," type=",rev_json["post_type"])
+                        except websockets.ConnectionClosed as e:
+                            print(e.code)
+                            if e.code == 1006:
+                                print('restart')
+                                await asyncio.sleep(2)
+                                break
+        except ConnectionRefusedError as e:
+                print(e)
+                global count
+                if count == 10: 
+                    return
+                count += 1
+                await asyncio.sleep(2)
 def start_server():
     global httpd
-    httpd = run_server()
-    httpd.serve_forever()
+    if not ws:
+        httpd = run_server()
+        httpd.serve_forever()
+    else:
+        asyncio.get_event_loop().run_until_complete(wsserver())
 def request_to_json(msg):
     for i in range(len(msg)):
         if msg[i]=="{" and msg[-1]=="\n":
             return json.loads(msg[i:])
     return None
 
+# def wake():
+#     if wakeup:
+#         print("WOL")
+#         send_msg({'msg_type':"private",'number':rev['user_id'],'msg':"WOL started"})
+#         send_magic_packet(wake_mac)
 
-def wake():
-    if wakeup:
-        print("WOL")
-        send_msg({'msg_type':"private",'number':rev['user_id'],'msg':"WOL started"})
-        send_magic_packet(wake_mac)
-
+async def lower_send(ENDPOINT,jsons) -> dict:
+    global wurl
+    if ws:
+        async with ws.connect(wurl) as websocket:
+            await websocket.send(json.dump({"action":ENDPOINT,"params":jsons}))
+            r = await websocket.recv()
+            print(r)
+            return json.loads(r)
+    else:
+        ttip = tip + ":" + str(tport)
+        response = requests.post(ttip+"/"+ENDPOINT, json=jsons)
+        print(response.text)
+        return response.json()
 def send_msg(resp_dict):
     global tip,tport
     msg_type = resp_dict['msg_type']  
@@ -155,17 +208,14 @@ def send_msg(resp_dict):
     msg = resp_dict['msg'] 
     ttip = tip + ":" + str(tport)
     if msg_type == 'group':
-        payl0 = {"message_type":msg_type,"group_id":number,"message":msg}
-        print("sent " + repr(msg))
-        response = requests.post(ttip+"/send_msg", json=payl0)
-        print(response.text)
-        print(response.status_code)
+            payl0 = {"message_type":msg_type,"group_id":number,"message":msg}
+            print("sent " + repr(msg))
+            lower_send("send_msg",payl0)
     elif msg_type == 'private':
-        payl0 = {"message_type":msg_type,"user_id":number,"message":msg}
-        print("sent " + repr(msg))
-        response = requests.post(ttip+"/send_msg", json=payl0)
-        print(response.text)
-        print(response.status_code)
+            payl0 = {"message_type":msg_type,"user_id":number,"message":msg}
+            
+            print("sent " + repr(msg))
+            lower_send("send_msg",payl0)
     return 0
 
 def clearmessage(qqg:int,messages:dict) -> dict:
@@ -198,15 +248,20 @@ def process_message(data):
     return raw_message.strip()
 import sys
 import subprocess
+# import mysql.connector
 
 def restart_program():
     command = sys.executable + ' ' + __file__
-    httpd.server_close()
-    # httpd.shutdown_request()
-    httpd.shutdown()
+    if not ws:
+        httpd.server_close()
+        # httpd.shutdown_request()
+        httpd.shutdown()
+    else:
+        wss.close()
     sleep(1)
     sys.exit(subprocess.call(command, shell=True))
 seq = {}
+
 def runchat(i,qqg,input,sender,self_id):
                                     global uset,messages,seq
                                     ng = str(qqg)
@@ -230,6 +285,12 @@ def runchat(i,qqg,input,sender,self_id):
                                     if i > 30:
                                         messages = clearmessage(qqg,messages)
                                         i = 0
+                                    response = re.sub(
+                                        r'<think>.*?</think>',  # 非贪婪匹配任意内容
+                                        '', 
+                                        response, 
+                                        flags=re.DOTALL  # 允许.匹配换行符
+                                    ).strip()
                                     outp = user+response
                                     for a in config["output_blacklist"]:
                                         if a in outp:
@@ -274,6 +335,7 @@ def run_r(rev):
                                                         atted = True
                                                         break
                                 qqg = rev['group_id']
+                                user = str(rev['user_id'])
                                 if ('/aisetting' in rev['raw_message'].lower()):
                                         attext = rev['raw_message']
                                         print(attext)
@@ -428,8 +490,16 @@ def run_r(rev):
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK seq(global) -> " + str(config["seq"])})                                          
 
                                         with open('config.json','w+') as f:
-                                            json.dump(config,f,indent=4)
-                                    
+                                            json.dump(config,f,indent=4)              
+                                    elif command[0] == "aiurl":
+                                        cbu(command[1],"")
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI URL CHANGED->"+command[1]})
+                                    elif command[0] == "aikey":
+                                        cbu("",command[1])
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI KEY CHANGED->"+command[1]})
+                                    elif command[0] == "model":
+                                        cam(command[1])
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK MODEL CHANGED->"+command[1]})
                                 elif '/estop' in rev['raw_message'].lower().lstrip()[:6] and permc(str(rev['user_id']),"admin",qqg):
                                     sp = True
                                     threadc = threading.Thread(target=tensecond)
@@ -450,7 +520,8 @@ def run_r(rev):
                                             uset = 0
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin",0):
-                                    wake()
+                                    # wake()
+                                    print("WOL")
 
 def seqc():
     global seq
@@ -461,7 +532,7 @@ def seqc():
                                             seq = {}
         if datetime.now().second ==29 or datetime.now().second == 1:
                                             seq = {}
-        sleep(0.5)
+        sleep(1)
      
 def read_last_prompt(file_from):
     with open(file_from, 'r', encoding='utf-8') as file:
@@ -475,8 +546,11 @@ def read_last_prompt(file_from):
             raise TypeError('No valid prompt number found in the last prompt')
         last_prompt_number = match.group(1)
         return last_prompt_number
+def escape_json_string(json_string: str) -> str:
+    return json_string.replace('&#44;', ',').replace('&amp;', '&').replace('&#91;', '[').replace('&#93;', ']')
 
 if __name__ == '__main__':
+        # send_msg({'msg_type':"group",'number':"719501584",'msg':"""[CQ:json,data={"app":"com.tencent.miniapp"&#44;"desc":""&#44;"view":"notification"&#44;"ver":"0.0.0.1"&#44;"prompt":"&#91;应用&#93;"&#44;"appID":""&#44;"sourceName":""&#44;"actionData":""&#44;"actionData_A":""&#44;"sourceUrl":""&#44;"meta":{"notification":{"appInfo":{"appName":"全国疫情数据统计"&#44;"appType":4&#44;"appid":1109659848&#44;"iconUrl":"http:\/\/gchat.qpic.cn\/gchatpic_new\/719328335\/-2010394141-6383A777BEB79B70B31CE250142D740F\/0"}&#44;"data":&#91;{"title":"确诊"&#44;"value":"80932"}&#44;{"title":"今日确诊"&#44;"value":"28"}&#44;{"title":"疑似"&#44;"value":"72"}&#44;{"title":"今日疑似"&#44;"value":"5"}&#44;{"title":"治愈"&#44;"value":"60197"}&#44;{"title":"今日治愈"&#44;"value":"1513"}&#44;{"title":"死亡"&#44;"value":"3140"}&#44;{"title":"今**亡"&#44;"value":"17"}&#93;&#44;"title":"中国加油, 武汉加油"&#44;"button":&#91;{"name":"病毒 : SARS-CoV-2, 其导致疾病命名 COVID-19"&#44;"action":""}&#44;{"name":"传染源 : 新冠肺炎的患者。无症状感染者也可能成为传染源。"&#44;"action":""}&#93;&#44;"emphasis_keyword":""}}&#44;"text":""&#44;"sourceAd":""}]"""})
         server_thread = threading.Thread(target=start_server)
         server_thread.start()
         server_thread = threading.Thread(target=seqc)
