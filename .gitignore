@@ -165,3 +165,5 @@ model_cache/
 bk
 
 bak_config.json
+
+output.json
