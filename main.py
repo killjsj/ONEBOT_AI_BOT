@@ -24,7 +24,7 @@ import builtins
 oprint = builtins.print
 def cprint(*args, kwargs):
     oprint(f"<{datetime.datetime.now()}>:", *args, kwargs)
-builtins.print = cprint
+
 # from wakeonlan import send_magic_packet
 global rev_json
 rev_json = None
@@ -51,22 +51,28 @@ Content-Type: text/html\r\n\r\n
 from wakeonlan import send_magic_packet #allow remote wakeup (if you dont need it,change wakeup true to false) this feature will remove at next version
 #waiting for muilt lang
 help_msg = f"""---bot help---
--/config        -修改机器人
---group         -修改群设置
---- cx->mc      -将cx替换成mc/sl(切换)
---- mcip        -修改检查的mc服务器ip 参数1: ip:port
---- slpb        -修改检查的sl服务器pastebin 参数1或更多:  pastebin1 参数2: pastebin2 ...
---- ai          -是否允许使用ai(切换)
---- tdwf        -未完成
--/server 或 cx  -查询设置的服务器
--/aisetting     -配置ai
---reset         -立刻重置ai记忆
---0,1,2....     -修改ai提示词(提示词见lang\\prompt_{lang}.txt 更多请检查项目的readme)
--直接@本机器人   -调用ai
-"""
+-/config        -Modify bot settings
+--group         -Modify group settings
+--- cx->mc      -Replace cx with mc/sl (toggle)
+--- mcip        -Change MC server IP to check. Parameter 1: ip:port
+--- slpb        -Change SL server pastebin to check. Parameter 1 or more: pastebin1 Parameter 2: pastebin2 ...
+--- ai          -Allow AI usage (toggle)
+--- tdwf        -Not completed
+--- welcome     -Enable welcome feature(use ai token)
+--- seq         -Change this group call ai sequence(seq reset when 30s)
+--aiurl         -change OpenAI api url (can use DM)
+--aikey         -change OpenAI api key (can use DM)
+--model         -change OpenAI api model (can use DM)
+-/server or cx  -Query set server
+-/aisetting     -Configure AI
+-/restart       -Restart program
+-/estop         -Stop call AI feature in 10s
+--reset         -Reset AI memory immediately
+--0,1,2....     -Modify AI prompts (prompts in lang\\prompt_{lang}.txt, check project readme for more)
+-@bot directly  -Call AI"""
 
-wakeup = True
-wake_mac = '20-31-11-1A-07-CA' # input youe mac
+# wakeup = True
+# wake_mac = '20-31-11-1A-07-CA' # input you mac
 
 def readprompt(file_from: str, target_i: int = 0):
     with open(file_from, 'r', encoding='utf-8') as file:
@@ -97,6 +103,7 @@ def lang_check(lang):
 mode = 0
 la = 0
 langprom = os.path.join('lang', f'prompt_{lang}.txt')
+langhelp = os.path.join('lang', f'help_{lang}.txt')
 messages = {}
 request_queue = queue.Queue()
 file_content_dict = {}
@@ -105,7 +112,6 @@ def permc(id,permneed,qqg):
     
     with open('config.json','r+') as f:
         config = json.load(f)
-        # print("admin list:"+config["admin"])
     if permneed == "admin":
         if id in config["admin"]:
             return True
@@ -146,7 +152,6 @@ async def wsserver():
     global tip,tport,running,wss
     running = True
     while True:
-        # websockets.connect(f"ws://{tip}:{tport}")
         try:
                 async with ws.connect(wurl) as websocket:
                     wss = websocket
@@ -162,7 +167,7 @@ async def wsserver():
                         except websockets.ConnectionClosed as e:
                             print("ws code:"+e.code)
                             if e.code == 1006:
-                                print('code 1006!restarting')
+                                print('code 1006!restarting connect')
                                 await asyncio.sleep(2)
                                 break
         except ConnectionRefusedError as e:
@@ -249,8 +254,6 @@ def process_message(data):
     return raw_message.strip()
 import sys
 import subprocess
-# import mysql.connector
-
 def restart_program():
     command = sys.executable + ' ' + __file__
     if not ws:
@@ -453,8 +456,7 @@ def run_r(rev):
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
                                                 print(str(rev['user_id']+" is creating new config and changing cx->mc -> ")+str(config["group"][str(qqg)]["cx->mc"]))
-                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
-                                        
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})                                       
                                         if command[1] == "cx":  
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["cx"] = not(config["group"][str(qqg)]["cx"])
@@ -464,8 +466,7 @@ def run_r(rev):
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["cx"] = not(config["group"][str(qqg)]["cx"])
                                                 print(str(rev['user_id']+" is creating new config and changing cx -> ")+str(config["group"][str(qqg)]["cx"]))
-                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server) ->" + str(config["group"][str(qqg)]["cx->mc"])})
-                                        
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server) ->" + str(config["group"][str(qqg)]["cx->mc"])})                                        
                                         if command[1] == "ai":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
@@ -476,7 +477,6 @@ def run_r(rev):
                                                 config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
                                                 print(str(rev['user_id']+" is creating new config and changing ai -> ")+str(config["group"][str(qqg)]["ai"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created ai mode ->" + str(config["group"][str(qqg)]["ai"])})
-                                        
                                         if command[1] == "welcome":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["enableaiwelcome"] = not(config["group"][str(qqg)]["enableaiwelcome"])
@@ -487,7 +487,6 @@ def run_r(rev):
                                                 config["group"][str(qqg)]["enableaiwelcome"] = not(config["group"][str(qqg)]["enableaiwelcome"])
                                                 print(str(rev['user_id']+" is creating new config and changing welcome -> ")+str(config["group"][str(qqg)]["enableaiwelcome"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created enableaiwelcome ->" + str(config["group"][str(qqg)]["enableaiwelcome"])})
-                                        
                                         if command[1] == "mcip":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["mc_ip"] = command[2]
@@ -498,7 +497,6 @@ def run_r(rev):
                                                 config["group"][str(qqg)]["mc_ip"] = command[2]
                                                 print(str(rev['user_id']+" is creating new config and changing mcip -> ")+command[2])
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ip ->" + command[2]})
-                                        
                                         if command[1] == "slpb":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["sl_pb"] = command[1:]
@@ -509,7 +507,6 @@ def run_r(rev):
                                                 config["group"][str(qqg)]["sl_pb"] = command[1:]
                                                 print(str(rev['user_id']+" is creating new config and changing slpb -> ")+str(command[1:]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2sl pastebin changed"})
-                                        
                                         if command[1] == "tdwf":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
@@ -519,9 +516,8 @@ def run_r(rev):
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
                                                 print(str(rev['user_id']+" is creating new config and changing tdwf -> ")+str(config["group"][str(qqg)]["tdwf"]["en"]))
-                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
-                                        
-                                        elif command[1] == "seq":
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})              
+                                        if command[1] == "seq":
                                             config["seq"] = int(command[2])
                                             print(str(rev['user_id']+" is changing seq -> ")+str(command[2]))
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK seq(global) -> " + str(config["seq"])})                                          
@@ -554,7 +550,6 @@ def run_r(rev):
                                 elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent" and not sp:
                                     uset = uset+1
                                     attext = attext.strip()
-                                    
                                     attext = process_message(rev)
                                     if attext != "":
                                         print(str(rev['user_id']+" is calling ai!"))
@@ -566,6 +561,22 @@ def run_r(rev):
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin",0):
                                     pass
+                                elif '/config' in rev['raw_message'].lower().lstrip()[:7] and permc(str(rev['user_id']),"admin",qqg):
+                                    command = rev['raw_message'].lstrip()[7:].split()
+                                    print(command)         
+                                    if command[0] == "aiurl":
+                                        cbu(command[1],"")
+                                        print(str(rev['user_id']+" is changing ai url-> ")+command[1])
+                                        
+                                        send_msg({'msg_type':'private','number':user,'msg':"200 OK AI URL CHANGED-> "+command[1]})
+                                    elif command[0] == "aikey":
+                                        cbu("",command[1])
+                                        print(str(rev['user_id']+" is changing ai key-> ")+command[1])
+                                        send_msg({'msg_type':'private','number':user,'msg':"200 OK AI KEY CHANGED-> *****"})
+                                    elif command[0] == "model":
+                                        cam(command[1])
+                                        print(str(rev['user_id']+" is changing model -> ")+command[1])
+                                        send_msg({'msg_type':'private','number':user,'msg':"200 OK MODEL CHANGED-> "+command[1]})
 
 def seqc():
     global seq
@@ -592,9 +603,10 @@ def read_last_prompt(file_from):
         return last_prompt_number
 def escape_json_string(json_string: str) -> str:
     return json_string.replace('&#44;', ',').replace('&amp;', '&').replace('&#91;', '[').replace('&#93;', ']')
-
 if __name__ == '__main__':
-        # send_msg({'msg_type':"group",'number':"719501584",'msg':"""[CQ:json,data={"app":"com.tencent.miniapp"&#44;"desc":""&#44;"view":"notification"&#44;"ver":"0.0.0.1"&#44;"prompt":"&#91;应用&#93;"&#44;"appID":""&#44;"sourceName":""&#44;"actionData":""&#44;"actionData_A":""&#44;"sourceUrl":""&#44;"meta":{"notification":{"appInfo":{"appName":"全国疫情数据统计"&#44;"appType":4&#44;"appid":1109659848&#44;"iconUrl":"http:\/\/gchat.qpic.cn\/gchatpic_new\/719328335\/-2010394141-6383A777BEB79B70B31CE250142D740F\/0"}&#44;"data":&#91;{"title":"确诊"&#44;"value":"80932"}&#44;{"title":"今日确诊"&#44;"value":"28"}&#44;{"title":"疑似"&#44;"value":"72"}&#44;{"title":"今日疑似"&#44;"value":"5"}&#44;{"title":"治愈"&#44;"value":"60197"}&#44;{"title":"今日治愈"&#44;"value":"1513"}&#44;{"title":"死亡"&#44;"value":"3140"}&#44;{"title":"今**亡"&#44;"value":"17"}&#93;&#44;"title":"中国加油, 武汉加油"&#44;"button":&#91;{"name":"病毒 : SARS-CoV-2, 其导致疾病命名 COVID-19"&#44;"action":""}&#44;{"name":"传染源 : 新冠肺炎的患者。无症状感染者也可能成为传染源。"&#44;"action":""}&#93;&#44;"emphasis_keyword":""}}&#44;"text":""&#44;"sourceAd":""}]"""})
+
+        builtins.print = cprint
+    
         server_thread = threading.Thread(target=start_server)
         server_thread.start()
         server_thread = threading.Thread(target=seqc)
@@ -604,8 +616,14 @@ if __name__ == '__main__':
         print("admin list:"+config["admin"])
         lang_check(lang)
         la=read_last_prompt(langprom)
+        with open(langhelp,"r+",encoding='utf-8') as file:
+            texts = file.readlines()
+            text = ''
+            for n in texts:
+                text += n
+        help_msg = text
+                
         while True:
-            
             rev = request_queue.get()
             try:
                 if rev == None and rev == {}:

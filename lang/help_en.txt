@@ -1,0 +1,20 @@
+---bot help---
+-/config        -Modify bot settings
+--group         -Modify group settings
+--- cx->mc      -Replace cx with mc/sl (toggle)
+--- mcip        -Change MC server IP to check. Parameter 1: ip:port
+--- slpb        -Change SL server pastebin to check. Parameter 1 or more: pastebin1 Parameter 2: pastebin2 ...
+--- ai          -Allow AI usage (toggle)
+--- tdwf        -Not completed
+--- welcome     -Enable welcome feature(use ai token)
+--- seq         -Change this group call ai sequence(seq reset when 30s)
+--aiurl         -change OpenAI api url (can use DM)
+--aikey         -change OpenAI api key (can use DM)
+--model         -change OpenAI api model (can use DM)
+-/server or cx  -Query set server
+-/aisetting     -Configure AI
+-/restart       -Restart program
+-/estop         -Stop call AI feature in 10s
+--reset         -Reset AI memory immediately
+--0,1,2....     -Modify AI prompts (prompts in lang\\prompt_{lang}.txt, check project readme for more)
+-@bot directly  -Call AI
