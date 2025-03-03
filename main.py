@@ -216,12 +216,12 @@ def send_msg(resp_dict):
     if msg_type == 'group':
             payl0 = {"message_type":msg_type,"group_id":number,"message":msg}
             print("sending " + repr(msg))
-            lower_send("send_msg",payl0)
+            asyncio.run(lower_send("send_msg",payl0))
     elif msg_type == 'private':
             payl0 = {"message_type":msg_type,"user_id":number,"message":msg}
             
             print("sending " + repr(msg))
-            lower_send("send_msg",payl0)
+            asyncio.run(lower_send("send_msg",payl0))
     return 0
 
 def clearmessage(qqg:int,messages:dict) -> dict:
