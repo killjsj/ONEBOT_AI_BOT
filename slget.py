@@ -3,7 +3,6 @@ import time
 from bs4 import BeautifulSoup as bs
 import requests
 def getslserver(pb) -> list:
-    print(pb)
     global re
     post_params = {
     "search": "",
@@ -21,11 +20,9 @@ def getslserver(pb) -> list:
         a = post_response.json()
         for n in a["servers"]:
             if n["pastebin"] in pb:
-                print(n)
                 printed_rows.append(n)
 
         if printed_rows == []:
-            print("服务器死了 好似")
             return "404"
         
         return printed_rows

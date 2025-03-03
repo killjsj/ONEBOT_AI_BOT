@@ -20,6 +20,11 @@ import json
 import http.server
 import threading
 from time import sleep
+import builtins
+oprint = builtins.print
+def cprint(*args, kwargs):
+    oprint(f"<{datetime.datetime.now()}>:", *args, kwargs)
+builtins.print = cprint
 # from wakeonlan import send_magic_packet
 global rev_json
 rev_json = None
@@ -38,6 +43,7 @@ tport = config["network"]["http"]["t"]["port"]
 fport = config["network"]["http"]["f"]["port"]
 wurl = config["network"]["ws"]["url"]
 lang = config["lang"]
+# enablewelcome = config["lang"]
 # sql:bool = config["sql"]
 HttpResponseHeader = '''HTTP/1.1 200 OK\r\n
 Content-Type: text/html\r\n\r\n
@@ -99,9 +105,8 @@ def permc(id,permneed,qqg):
     
     with open('config.json','r+') as f:
         config = json.load(f)
-        print(config["admin"])
+        # print("admin list:"+config["admin"])
     if permneed == "admin":
-        
         if id in config["admin"]:
             return True
         else:return False
@@ -121,13 +126,11 @@ class HTTPQQRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length).decode('utf-8')
-        print(post_data)
         try:
             reva = json.loads(post_data)
             request_queue.put(reva) 
         except json.JSONDecodeError:
             print("Received non-JSON data:", post_data)
-            #print("raw:", rev_json['raw_message']," type=",rev_json["post_type"])
         
         self.send_response(204)
         self.end_headers()
@@ -137,7 +140,7 @@ def run_server(server_class=http.server.HTTPServer, handler_class=HTTPQQRequestH
     fport = int(fport)
     server_address = (fip, fport) #此处由onebot服务端发送post(HTTP POST：OneBot 作为 HTTP 客户端，向用户配置的 URL 推送事件，并处理用户返回的响应)
     httpd = server_class(server_address, handler_class)
-    print("POST START")
+    print("POST server START")
     return httpd
 async def wsserver():
     global tip,tport,running,wss
@@ -147,7 +150,7 @@ async def wsserver():
         try:
                 async with ws.connect(wurl) as websocket:
                     wss = websocket
-                    while True:
+                    while running:
                         try:
                             dat = await websocket.recv()
                             try:
@@ -157,9 +160,9 @@ async def wsserver():
                                 print("Received non-JSON data:", dat)
                                 #print("raw:", rev_json['raw_message']," type=",rev_json["post_type"])
                         except websockets.ConnectionClosed as e:
-                            print(e.code)
+                            print("ws code:"+e.code)
                             if e.code == 1006:
-                                print('restart')
+                                print('code 1006!restarting')
                                 await asyncio.sleep(2)
                                 break
         except ConnectionRefusedError as e:
@@ -194,12 +197,10 @@ async def lower_send(ENDPOINT,jsons) -> dict:
         async with ws.connect(wurl) as websocket:
             await websocket.send(json.dump({"action":ENDPOINT,"params":jsons}))
             r = await websocket.recv()
-            print(r)
             return json.loads(r)
     else:
         ttip = tip + ":" + str(tport)
         response = requests.post(ttip+"/"+ENDPOINT, json=jsons)
-        print(response.text)
         return response.json()
 def send_msg(resp_dict):
     global tip,tport
@@ -209,12 +210,12 @@ def send_msg(resp_dict):
     ttip = tip + ":" + str(tport)
     if msg_type == 'group':
             payl0 = {"message_type":msg_type,"group_id":number,"message":msg}
-            print("sent " + repr(msg))
+            print("sending " + repr(msg))
             lower_send("send_msg",payl0)
     elif msg_type == 'private':
             payl0 = {"message_type":msg_type,"user_id":number,"message":msg}
             
-            print("sent " + repr(msg))
+            print("sending " + repr(msg))
             lower_send("send_msg",payl0)
     return 0
 
@@ -257,6 +258,7 @@ def restart_program():
         # httpd.shutdown_request()
         httpd.shutdown()
     else:
+        running = False
         wss.close()
     sleep(1)
     sys.exit(subprocess.call(command, shell=True))
@@ -274,7 +276,6 @@ def runchat(i,qqg,input,sender,self_id):
                                         user =  ''
                                     else:
                                         user =  '[CQ:at,qq=' + str(rev['user_id']) + '] '   
-                                    print(seq)
                                     if seq[ng] > int(config["seq"]):
                                         send_msg({'msg_type':'group','number':qqg,'msg':"429 Too Many Requests"})
                                         return
@@ -306,13 +307,19 @@ def run_r(rev):
                             global uset,messages,config,mode,self_id,sp,la
                             atted = False
                             attext = rev.get("raw_message")
-                            print(rev.get('self_id',0))
                             self_id = str(rev.get('self_id',0))
                             if rev.get('post_type') == "notice":
-                                print(rev.get('notice_type'))
                                 if rev.get('notice_type') == "group_increase":
-                                    threadc = threading.Thread(target=runchat,args=(0,rev.get("group_id"),"有新人"+str(rev.get("user_id"))+"(qid)入群 请欢迎它",{"nickname":"系统自动提示","title":"","card":"","group":"add"},self_id,))
-                                    threadc.start()   
+                                    if str(qqg) in config["group"]:
+                                        if config["group"][str(qqg)]["enableaiwelcome"]:
+                                            threadc = threading.Thread(target=runchat,args=(0,rev.get("group_id"),"有新人"+str(rev.get("user_id"))+"(qid)入群 请欢迎它",{"nickname":"系统自动提示","title":"","card":"","group":"add"},self_id,))
+                                            threadc.start()  
+                                            print("new user in "+rev.get("group_id")) 
+                                        elif config["group"]["0"]["enableaiwelcome"]:
+                                            threadc = threading.Thread(target=runchat,args=(0,rev.get("group_id"),"有新人"+str(rev.get("user_id"))+"(qid)入群 请欢迎它",{"nickname":"系统自动提示","title":"","card":"","group":"add"},self_id,))
+                                            threadc.start()
+                                            print("new user in "+rev.get("group_id")) 
+                                            
                             elif rev.get('message_type')=="group":
                                 sender = rev['sender']
                                 try:
@@ -338,18 +345,16 @@ def run_r(rev):
                                 user = str(rev['user_id'])
                                 if ('/aisetting' in rev['raw_message'].lower()):
                                         attext = rev['raw_message']
-                                        print(attext)
                                         comm = rev['raw_message'].split(" ")
-                                        print(comm)
                                         if comm[1] == "reset":
                                             messages = clearmessage(qqg,messages)
                                             send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI CONTEXT RESET MODE "+str(mode)+" NOW"})
+                                            print(f"reset context in group:{qqg} by:"+user)
                                         if is_number(comm[1]):
                                             try:
                                                 comm[1] = int(comm[1])
                                                 if comm[1] <= int(la) and comm[1] >= 0:
                                                     mode = comm[1]
-                                                    print(messages)
                                                     if str(qqg) in messages:
                                                         if not messages[str(qqg)] == []:
                                                             messages[str(qqg)] = [{"role": "system", "content": readprompt(langprom,mode)},]
@@ -358,10 +363,13 @@ def run_r(rev):
                                                     else:
                                                         clearmessage(qqg,messages)
                                                     send_msg({'msg_type':'group','number':qqg,'msg':"200 OK"})
+                                                    print(f"mode change in group:{qqg} by:"+user)
                                                 else:
                                                     send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable"})
+                                                    print("prompt:"+comm[1]+" 406 Not Acceptable")
                                             except ValueError:
-                                                send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable,string not acceptable"})                 
+                                                send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable,string not acceptable"})  
+                                                print("ValueError")               
                                 elif rev['raw_message'].lower().startswith('/server') or rev['raw_message'].lower().startswith("cx"):
                                     with open('config.json','r+') as f:
                                         config = json.load(f)
@@ -399,7 +407,7 @@ def run_r(rev):
                                                 else:
                                                     ms = server
                                     else: 
-                                        if config["group"]["0"]["cx->mc"]:
+                                        if config["group"][str(qqg)]["cx->mc"]:
                                             ip = config["group"][str(qqg)]["mc_ip"]
                                             ms = mcserver.get_java_server_info(ip,lang)
                                         else:
@@ -431,7 +439,6 @@ def run_r(rev):
                                     send_msg({'msg_type':"group",'number':qqg,'msg':ms})
                                     #wait for tdwf write:(
                                 elif '/help' in rev['raw_message']:
-                                    print("/help")
                                     send_msg({'msg_type':"group",'number':qqg,'msg':help_msg})
                                 elif '/config' in rev['raw_message'].lower().lstrip()[:7] and permc(str(rev['user_id']),"admin",qqg):
                                     command = rev['raw_message'].lstrip()[7:].split()
@@ -440,73 +447,109 @@ def run_r(rev):
                                         if command[1] == "cx->mc":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
+                                                print(str(rev['user_id']+" is changing cx->mc -> ")+str(config["group"][str(qqg)]["cx->mc"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
                                             else: 
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["cx->mc"] = not(config["group"][str(qqg)]["cx->mc"])
+                                                print(str(rev['user_id']+" is creating new config and changing cx->mc -> ")+str(config["group"][str(qqg)]["cx->mc"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ->" + str(config["group"][str(qqg)]["cx->mc"])})
+                                        
                                         if command[1] == "cx":  
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["cx"] = not(config["group"][str(qqg)]["cx"])
+                                                print(str(rev['user_id']+" is changing cx -> ")+str(config["group"][str(qqg)]["cx"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server) ->" + str(config["group"][str(qqg)]["cx->mc"])})
                                             else: 
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["cx"] = not(config["group"][str(qqg)]["cx"])
+                                                print(str(rev['user_id']+" is creating new config and changing cx -> ")+str(config["group"][str(qqg)]["cx"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server) ->" + str(config["group"][str(qqg)]["cx->mc"])})
+                                        
                                         if command[1] == "ai":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
+                                                print(str(rev['user_id']+" is changing ai -> ")+str(config["group"][str(qqg)]["ai"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK ai mode ->" + str(config["group"][str(qqg)]["ai"])})
                                             else: 
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["ai"] = not(config["group"][str(qqg)]["ai"])
+                                                print(str(rev['user_id']+" is creating new config and changing ai -> ")+str(config["group"][str(qqg)]["ai"]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created ai mode ->" + str(config["group"][str(qqg)]["ai"])})
+                                        
+                                        if command[1] == "welcome":
+                                            if str(qqg) in config["group"]:
+                                                config["group"][str(qqg)]["enableaiwelcome"] = not(config["group"][str(qqg)]["enableaiwelcome"])
+                                                print(str(rev['user_id']+" is changing welcome -> ")+str(config["group"][str(qqg)]["enableaiwelcome"]))
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK ai mode ->" + str(config["group"][str(qqg)]["enableaiwelcome"])})
+                                            else: 
+                                                config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                                config["group"][str(qqg)]["enableaiwelcome"] = not(config["group"][str(qqg)]["enableaiwelcome"])
+                                                print(str(rev['user_id']+" is creating new config and changing welcome -> ")+str(config["group"][str(qqg)]["enableaiwelcome"]))
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created enableaiwelcome ->" + str(config["group"][str(qqg)]["enableaiwelcome"])})
+                                        
                                         if command[1] == "mcip":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["mc_ip"] = command[2]
+                                                print(str(rev['user_id']+" is changing mcip -> ")+command[2])
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2mc ip ->" + str(command[2])})
                                             else: 
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["mc_ip"] = command[2]
+                                                print(str(rev['user_id']+" is creating new config and changing mcip -> ")+command[2])
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2mc ip ->" + command[2]})
+                                        
                                         if command[1] == "slpb":
                                             if str(qqg) in config["group"]:
                                                 config["group"][str(qqg)]["sl_pb"] = command[1:]
+                                                print(str(rev['user_id']+" is changing slpb -> ")+str(command[1:]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK cx(/server)2sl pastebin changed"})
                                             else: 
                                                 config["group"][str(qqg)] = config["group"]["0"] # copy a new config
                                                 config["group"][str(qqg)]["sl_pb"] = command[1:]
+                                                print(str(rev['user_id']+" is creating new config and changing slpb -> ")+str(command[1:]))
                                                 send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created cx(/server)2sl pastebin changed"})
+                                        
                                         if command[1] == "tdwf":
-                                                if str(qqg) in config["group"]:
-                                                    config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
-                                                    send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
-                                                else: 
-                                                    config["group"][str(qqg)] = config["group"]["0"] # copy a new config
-                                                    config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
-                                                    send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})                                          
+                                            if str(qqg) in config["group"]:
+                                                config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
+                                                print(str(rev['user_id']+" is changing tdwf -> ")+str(config["group"][str(qqg)]["tdwf"]["en"]))
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
+                                            else: 
+                                                config["group"][str(qqg)] = config["group"]["0"] # copy a new config
+                                                config["group"][str(qqg)]["tdwf"]["en"] = not(config["group"][str(qqg)]["tdwf"]["en"])
+                                                print(str(rev['user_id']+" is creating new config and changing tdwf -> ")+str(config["group"][str(qqg)]["tdwf"]["en"]))
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK new config created tdwf(today_wife) ->" + str(config["group"][str(qqg)]["tdwf"]["en"])})
+                                        
                                         elif command[1] == "seq":
                                             config["seq"] = int(command[2])
+                                            print(str(rev['user_id']+" is changing seq -> ")+str(command[2]))
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK seq(global) -> " + str(config["seq"])})                                          
 
                                         with open('config.json','w+') as f:
                                             json.dump(config,f,indent=4)              
                                     elif command[0] == "aiurl":
                                         cbu(command[1],"")
-                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI URL CHANGED->"+command[1]})
+                                        print(str(rev['user_id']+" is changing ai url-> ")+command[1])
+                                        
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI URL CHANGED-> "+command[1]})
                                     elif command[0] == "aikey":
                                         cbu("",command[1])
-                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI KEY CHANGED->"+command[1]})
+                                        print(str(rev['user_id']+" is changing ai key-> ")+command[1])
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI KEY CHANGED-> *****"})
                                     elif command[0] == "model":
                                         cam(command[1])
-                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK MODEL CHANGED->"+command[1]})
+                                        print(str(rev['user_id']+" is changing model -> ")+command[1])
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK MODEL CHANGED-> "+command[1]})
                                 elif '/estop' in rev['raw_message'].lower().lstrip()[:6] and permc(str(rev['user_id']),"admin",qqg):
                                     sp = True
                                     threadc = threading.Thread(target=tensecond)
                                     threadc.start()   
+                                    print(str(rev['user_id']+" is stopping ai for 10s!"))
                                     send_msg({'msg_type':'group','number':qqg,'msg':"200 OK STOP 10 SECOND"})
                                 elif '/restart' in rev['raw_message'].lower().lstrip()[:9] and permc(str(rev['user_id']),"admin",qqg):
                                     send_msg({'msg_type':'group','number':qqg,'msg':"200 OK RESTARTING IN 1S!!!!"})
+                                    print(str(rev['user_id']+" is restarting program!"))
                                     restart_program()
                                 elif atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent" and not sp:
                                     uset = uset+1
@@ -514,14 +557,15 @@ def run_r(rev):
                                     
                                     attext = process_message(rev)
                                     if attext != "":
+                                        print(str(rev['user_id']+" is calling ai!"))
+                                        
                                         threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
                                         threadc.start()    
                                         if uset> 30:
                                             uset = 0
                             elif rev.get('message_type','group') == "private":
                                 if '/wake' in rev['raw_message'] and permc(str(rev['user_id']),"admin",0):
-                                    # wake()
-                                    print("WOL")
+                                    pass
 
 def seqc():
     global seq
@@ -555,6 +599,9 @@ if __name__ == '__main__':
         server_thread.start()
         server_thread = threading.Thread(target=seqc)
         server_thread.start()
+        with open('config.json','r+') as f:
+            config = json.load(f)
+        print("admin list:"+config["admin"])
         lang_check(lang)
         la=read_last_prompt(langprom)
         while True:
@@ -567,9 +614,9 @@ if __name__ == '__main__':
                     print(rev)
                 elif rev["post_type"] == "meta_event":
                     if not rev["meta_event_type"] == "heartbeat":
-                        print(rev)
+                        print("meta_event:",rev)
             except KeyError:
-                print(rev)
+                print("KeyError:",rev)
             finally:
                                 try:
                                     threadc = threading.Thread(target=run_r,args=(rev,))

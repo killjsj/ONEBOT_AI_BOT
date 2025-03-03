@@ -37,12 +37,10 @@ async def lower_send(ENDPOINT,jsons) -> dict:
         async with ws.connect(wurl) as websocket:
             await websocket.send(json.dump({"action":ENDPOINT,"params":jsons}))
             r = await websocket.recv()
-            print(r)
             return json.loads(r)
     else:
         ttip = tip + ":" + str(tport)
         response = requests.post(ttip+"/"+ENDPOINT, json=jsons)
-        print(response.text)
         return response.json()
 client = OpenAI(
     api_key = aikey, 

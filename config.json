@@ -41,6 +41,7 @@
             "cx": true,
             "ai": true,
             "cx->mc": false,
+            "enableaiwelcome":true,
             "mc_ip": "",
             "sl_pb": [
                 "YyMi7aUL",
