@@ -185,7 +185,7 @@ def start_server():
     else:
         ai.lower_send = lower_send
         
-        asyncio.get_event_loop().run_until_complete(wsserver())
+        asyncio.run(wsserver())
 def request_to_json(msg):
     for i in range(len(msg)):
         if msg[i]=="{" and msg[-1]=="\n":
