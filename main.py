@@ -6,7 +6,7 @@ import queue
 import shutil
 from typing import *
 import re
-from ai import *
+import ai
 import slget
 import time
 import mcserver
@@ -183,6 +183,8 @@ def start_server():
         httpd = run_server()
         httpd.serve_forever()
     else:
+        ai.lower_send = lower_send
+        
         asyncio.get_event_loop().run_until_complete(wsserver())
 def request_to_json(msg):
     for i in range(len(msg)):
@@ -197,11 +199,10 @@ def request_to_json(msg):
 #         send_magic_packet(wake_mac)
 
 async def lower_send(ENDPOINT,jsons) -> dict:
-    global wurl
+    global wurl,wss
     if ws:
-        async with ws.connect(wurl) as websocket:
-            await websocket.send(json.dump({"action":ENDPOINT,"params":jsons}))
-            r = await websocket.recv()
+            await wss.send(json.dump({"action":ENDPOINT,"params":jsons}))
+            r = await wss.recv()
             return json.loads(r)
     else:
         ttip = tip + ":" + str(tport)
@@ -285,16 +286,19 @@ def runchat(i,qqg,input,sender,self_id):
                                     comm = input
                                     if ng not in messages:
                                         messages[ng] = [{"role": "system", "content": readprompt(langprom,mode)}]
-                                    response,messages[str(qqg)] = chat(messages.get(str(qqg)),comm,qqg,sender,str(self_id))
+                                    if config["online"]["stream"]:
+                                        response,messages[str(qqg)] = ai.chat_stream(messages.get(str(qqg)),comm,qqg,sender,str(self_id))
+                                    else:
+                                        response,messages[str(qqg)] = ai.chat(messages.get(str(qqg)),comm,qqg,sender,str(self_id))
                                     if i > 30:
                                         messages = clearmessage(qqg,messages)
                                         i = 0
-                                    response = re.sub(
-                                        r'<think>.*?</think>',  # 非贪婪匹配任意内容
-                                        '', 
-                                        response, 
-                                        flags=re.DOTALL  # 允许.匹配换行符
-                                    ).strip()
+                                    # response = re.sub(
+                                    #     r'<think>.*?</think>',  # 非贪婪匹配任意内容
+                                    #     '', 
+                                    #     response, 
+                                    #     flags=re.DOTALL  # 允许.匹配换行符
+                                    # ).strip()
                                     outp = user+response
                                     for a in config["output_blacklist"]:
                                         if a in outp:
@@ -525,16 +529,16 @@ def run_r(rev):
                                         with open('config.json','w+') as f:
                                             json.dump(config,f,indent=4)              
                                     elif command[0] == "aiurl":
-                                        cbu(command[1],"")
+                                        ai.cbu(command[1],"")
                                         print(str(rev['user_id']+" is changing ai url-> ")+command[1])
                                         
                                         send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI URL CHANGED-> "+command[1]})
                                     elif command[0] == "aikey":
-                                        cbu("",command[1])
+                                        ai.cbu("",command[1])
                                         print(str(rev['user_id']+" is changing ai key-> ")+command[1])
                                         send_msg({'msg_type':'group','number':qqg,'msg':"200 OK AI KEY CHANGED-> *****"})
                                     elif command[0] == "model":
-                                        cam(command[1])
+                                        ai.cam(command[1])
                                         print(str(rev['user_id']+" is changing model -> ")+command[1])
                                         send_msg({'msg_type':'group','number':qqg,'msg':"200 OK MODEL CHANGED-> "+command[1]})
                                 elif '/estop' in rev['raw_message'].lower().lstrip()[:6] and permc(str(rev['user_id']),"admin",qqg):
@@ -565,16 +569,16 @@ def run_r(rev):
                                     command = rev['raw_message'].lstrip()[7:].split()
                                     print(command)         
                                     if command[0] == "aiurl":
-                                        cbu(command[1],"")
+                                        ai.cbu(command[1],"")
                                         print(str(rev['user_id']+" is changing ai url-> ")+command[1])
                                         
                                         send_msg({'msg_type':'private','number':user,'msg':"200 OK AI URL CHANGED-> "+command[1]})
                                     elif command[0] == "aikey":
-                                        cbu("",command[1])
+                                        ai.cbu("",command[1])
                                         print(str(rev['user_id']+" is changing ai key-> ")+command[1])
                                         send_msg({'msg_type':'private','number':user,'msg':"200 OK AI KEY CHANGED-> *****"})
                                     elif command[0] == "model":
-                                        cam(command[1])
+                                        ai.cam(command[1])
                                         print(str(rev['user_id']+" is changing model -> ")+command[1])
                                         send_msg({'msg_type':'private','number':user,'msg':"200 OK MODEL CHANGED-> "+command[1]})
 

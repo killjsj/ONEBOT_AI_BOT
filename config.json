@@ -31,7 +31,8 @@
     },
     "online": {
         "aiurl": "",
-        "model": ""
+        "model": "",
+        "stream":true
     },
     "output_blacklist": [
         "2854196310"

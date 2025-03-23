@@ -6,6 +6,7 @@ import time
 from openai import OpenAI
 import json
 
+import openai
 import requests
 import tools
 from typing import *
@@ -518,6 +519,102 @@ tool_map = {
     "getdeltpeopleinfo":gdpi,
     "getgroupinfo":getgi,
 }
+def chat_stream(messages,input,qqg,sender,self_ids):
+        global self_id
+        self_id = self_ids
+        messages.append({
+            "role": "user",
+            "content": input,	
+        })
+        undone_tool_info = []
+        reasoning_content = ""
+        answer_content=  ""
+    # while finish_reason is None or finish_reason == "tool_calls":
+        # completion.
+        while True:
+            undone_tool_info = []
+        
+            completion : openai.Stream = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.3,
+                parallel_tool_calls=True,
+                tools=tool, 
+                max_tokens= None if maxtokens <= 0 else maxtokens,
+                stream=True,
+            ) 
+            for chunk in completion:
+                delta = chunk.choices[0].delta
+                if hasattr(delta, 'reasoning_content') and delta.reasoning_content is not None:
+                    reasoning_content += delta.reasoning_content
+                else:
+                    if delta.content is not None:
+                        answer_content += delta.content
+                        print(delta.content,end="",flush=True)  # 流式输出回复内容
+                    
+                    # 处理工具调用信息（支持并行工具调用）
+                    if delta.tool_calls is not None:
+                        for tool_call in delta.tool_calls:
+                            index = tool_call.index  # 工具调用索引，用于并行调用
+                                
+                                # 动态扩展工具信息存储列表
+                            while len(undone_tool_info) <= index:
+                                    undone_tool_info.append({})
+                                
+                                # 收集工具调用ID（用于后续函数调用）
+                            if tool_call.id:
+                                    undone_tool_info[index]['id'] = undone_tool_info[index].get('id', '') + tool_call.id
+                                
+                                # 收集函数名称（用于后续路由到具体函数）
+                            if tool_call.function and tool_call.function.name:
+                                    undone_tool_info[index]['name'] = undone_tool_info[index].get('name', '') + tool_call.function.name
+                                
+                                # 收集函数参数（JSON字符串格式，需要后续解析）
+                            if tool_call.function and tool_call.function.arguments:
+                                    undone_tool_info[index]['arguments'] = undone_tool_info[index].get('arguments', '') + tool_call.function.arguments
+            if undone_tool_info == []:
+                break
+            for n in undone_tool_info:
+                                tool_call_name = n['name']
+                                try:
+                                        if tool_call_name == "getgroup":
+                                            group.put(qqg, False)
+                                except queue.Full:
+                                        print("qqg full! skipping put")
+                                try:
+                                        if tool_call_name == "getsender":
+                                            # 确保发送者信息正确编码
+                                            if isinstance(sender, dict):
+                                                for key in ['nickname', 'card', 'title']:
+                                                    if key in sender and isinstance(sender[key], str):
+                                                        sender[key] = decode_unicode_escapes(sender[key])
+                                            send.put(sender, False)
+                                except queue.Full:
+                                        print("sender full! skipping put")
+                                    
+                                tool_call_arguments = json.loads(n["arguments"]) 
+                                tool_function = tool_map[tool_call_name] 
+                                tool_result = tool_function(tool_call_arguments)
+                                print("calling ", tool_call_name, " args:", tool_call_arguments, " result:", tool_result)
+                                messages.append({'role': 'assistant', 
+                                                'content': None, 
+                                                'tool_calls': [
+                                                    {'id': n["id"], 
+                                                    'function':{"name":n["name"],'arguments':n['arguments']}
+                                                    }
+                                                    ]
+                                                })
+                                messages.append({
+                                "role": "tool",
+                                "tool_call_id": n["id"],
+                                "name": tool_call_name,
+                                "content": json.dumps(tool_result, ensure_ascii=False)  # 添加 ensure_ascii=False
+                                })            
+ 
+        assistant_message = answer_content
+        messages.append({"role": "assistant", "content": assistant_message})
+        return (answer_content,messages)
+
 def chat(messages,input,qqg,sender,self_ids):
     global self_id
     self_id = self_ids
