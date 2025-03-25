@@ -22,8 +22,8 @@ import threading
 from time import sleep
 import builtins
 oprint = builtins.print
-def cprint(*args, kwargs):
-    oprint(f"<{datetime.datetime.now()}>:", *args, kwargs)
+def cprint(*args, **kwargs):
+    oprint(f"<{datetime.now()}>:", *args, **kwargs)
 
 # from wakeonlan import send_magic_packet
 global rev_json
@@ -106,6 +106,7 @@ langprom = os.path.join('lang', f'prompt_{lang}.txt')
 langhelp = os.path.join('lang', f'help_{lang}.txt')
 messages = {}
 request_queue = queue.Queue()
+request_result_queue = queue.Queue()
 file_content_dict = {}
 def permc(id,permneed,qqg):
     global config
@@ -153,14 +154,18 @@ async def wsserver():
     running = True
     while True:
         try:
-                async with ws.connect(wurl) as websocket:
+                async with websockets.connect(wurl) as websocket:
                     wss = websocket
                     while running:
                         try:
                             dat = await websocket.recv()
                             try:
                                 reva = json.loads(dat)
-                                request_queue.put(reva) 
+                                reva : dict = reva
+                                if "114514" in reva.get("echo",""):
+                                    print("request_result_queue_received:",reva)
+                                    request_result_queue.put_nowait(reva)
+                                request_queue.put(reva)
                             except json.JSONDecodeError:
                                 print("Received non-JSON data:", dat)
                                 #print("raw:", rev_json['raw_message']," type=",rev_json["post_type"])
@@ -179,11 +184,12 @@ async def wsserver():
                 await asyncio.sleep(2)
 def start_server():
     global httpd
+    ai.lower_send = lower_send
+    
     if not ws:
         httpd = run_server()
         httpd.serve_forever()
     else:
-        ai.lower_send = lower_send
         
         asyncio.run(wsserver())
 def request_to_json(msg):
@@ -201,9 +207,11 @@ def request_to_json(msg):
 async def lower_send(ENDPOINT,jsons) -> dict:
     global wurl,wss
     if ws:
-            await wss.send(json.dump({"action":ENDPOINT,"params":jsons}))
-            r = await wss.recv()
-            return json.loads(r)
+            await wss.send(json.dumps({"action":ENDPOINT,"params":jsons,"echo":"114514"}))
+            print("send to ws")
+            r = request_result_queue.get()
+            print(r)
+            return r
     else:
         ttip = tip + ":" + str(tport)
         response = requests.post(ttip+"/"+ENDPOINT, json=jsons)
@@ -340,6 +348,7 @@ def run_r(rev):
                                     if "[CQ:file," not in rev["raw_message"]:
                                         attext = rev['raw_message']
                                 else:
+                                    if type(rm) !=str:
                                      for item in rm:
                                         if item.get('type') == 'at' and 'data' in item:
                                             if item['data'].get('qq') == self_id:
@@ -556,7 +565,7 @@ def run_r(rev):
                                     attext = attext.strip()
                                     attext = process_message(rev)
                                     if attext != "":
-                                        print(str(rev['user_id']+" is calling ai!"))
+                                        print(str(rev['user_id'])+" is calling ai!")
                                         
                                         threadc = threading.Thread(target=runchat,args=(uset,qqg,attext,sender,self_id,))
                                         threadc.start()    
@@ -617,7 +626,8 @@ if __name__ == '__main__':
         server_thread.start()
         with open('config.json','r+') as f:
             config = json.load(f)
-        print("admin list:"+config["admin"])
+        for a in config["admin"]:
+            print("admin:"+a)
         lang_check(lang)
         la=read_last_prompt(langprom)
         with open(langhelp,"r+",encoding='utf-8') as file:
@@ -630,12 +640,12 @@ if __name__ == '__main__':
         while True:
             rev = request_queue.get()
             try:
-                if rev == None and rev == {}:
+                if rev == None or rev == {}:
                     continue
-                if not rev["post_type"] == "meta_event":
+                if not rev.get("post_type","") == "meta_event":
                     print(rev)
-                elif rev["post_type"] == "meta_event":
-                    if not rev["meta_event_type"] == "heartbeat":
+                elif rev.get("post_type","") == "meta_event":
+                    if not rev.get("meta_event_type","") == "heartbeat":
                         print("meta_event:",rev)
             except KeyError:
                 print("KeyError:",rev)

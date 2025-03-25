@@ -47,8 +47,9 @@ client = OpenAI(
     api_key = aikey, 
     base_url = url,
 )
+
 if not(allow_draw):
-    tool = [
+        tool = [
         {
             "type": "function",
             "function": {
@@ -56,7 +57,7 @@ if not(allow_draw):
                 "description": "get current time (formatted as YYYY-MM-DD HH:MM:SS)",
                 "parameters": {
                     "type": "object",
-                    "required": ["query"],
+                    "required": [],
                     "properties": {
                         "nothing": {
                             "type": "string",
@@ -69,8 +70,67 @@ if not(allow_draw):
         {
             "type": "function",
             "function": {
+                "name": "getpeople",
+                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. filter_cond(also known as parameter 2) When target = 'role', the filter_condcan only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
+                "parameters": {
+                    "type": "object",
+                    "required": ["group"],
+                    "properties": {
+                        "group": {
+                            "type": "string",
+                            "description": "input groupid and return people in this group,if you dont know the groupid,call getgroup"
+                        },
+                        "filter_target": {
+                            "type": "string",
+                            "description": """Target (role, name, user_id)"""
+                        },
+                        "filter_cond":{
+                            "type": "string",
+                            "description": """filter_cond(parameter 2) When target = 'role', the filter_cond can only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
+                        },
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "getgroupinfo",
+                "description": "input groupid and return group info",
+                "parameters": {
+                    "type": "object",
+                    "required": ["group"],
+                    "properties": {
+                        "group": {
+                            "type": "string",
+                            "description": "input groupid and return group info,if you dont know the groupid,call getgroup"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "getgroup",
-                "description": "get current you are talking with groupid(function getpeople need this!)",
+                "description": "get current you are talking with groupid(function getpeople need this!)(there is only one group number in each memory)",
+                "parameters": {
+                    "type": "object",
+                    "required": [],
+                    "properties": {
+                        "nothing": {
+                            "type": "string",
+                            "description": "just anything"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "getsender",
+                "description": "get current you are talking with somebody",
                 "parameters": {
                     "type": "object",
                     "required": [],
@@ -107,23 +167,6 @@ if not(allow_draw):
         {
             "type": "function",
             "function": {
-                "name": "getsender",
-                "description": "get current you are talking with somebody",
-                "parameters": {
-                    "type": "object",
-                    "required": [],
-                    "properties": {
-                        "nothing": {
-                            "type": "string",
-                            "description": "just anything"
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
                 "name": "getmyself",
                 "description": "get my userid",
                 "parameters": {
@@ -138,54 +181,11 @@ if not(allow_draw):
                 }
             }
         },
-                {
-            "type": "function",
-            "function": {
-                "name": "getpeople",
-                "description": "get people list in the group(need groupid,you need call 'getgroup' to get it,WARN ONLY accepted GROUP numbers) (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.) (WARNING you can not output more than 50 people) | Filter parameters: 1. target (role, name, user_id), 2. filter_cond(also known as parameter 2) When target = 'role', the filter_condcan only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id If you don't fill in the field, all will be returned (it is not recommended not to fill in this parameter) (when you can't find the target, you can try to search by another parameter)",
-                "parameters": {
-                    "type": "object",
-                    "required": ["group"],
-                    "properties": {
-                        "group": {
-                            "type": "string",
-                            "description": "input groupid and return people in this group"
-                        },
-                        "filter_target": {
-                            "type": "string",
-                            "description": """Target (role, name, user_id)"""
-                        },
-                        "filter_cond":{
-                            "type": "string",
-                            "description": """filter_cond(parameter 2) When target = 'role', the filter_condcan only be 'admin' (administrator and group owner), 'member' (non-admin), when target = 'name', the output is nickname, title, name (card) in the group whether it contains parameter 2, when target = 'user_id' , the output is Parameter 2 = Target of the user's user_id"""
-                        },
-                    }
-                }
-            }
-        },
-
-        {
-            "type": "function",
-            "function": {
-                "name": "getgroupinfo",
-                "description": "input groupid and return group info",
-                "parameters": {
-                    "type": "object",
-                    "required": ["group"],
-                    "properties": {
-                        "group": {
-                            "type": "string",
-                            "description": "input groupid and return group info"
-                        }
-                    }
-                }
-            }
-        },
         {
             "type": "function",
             "function": {
                 "name": "getdeltpeopleinfo",
-                "description": "get more people info(if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
+                "description": "get more personal(one person) info (if you want to at(@) somebody,add '[CQ:at,qq=qid]' and replace qid to user_id(MUST in the return data) into message,Warn!, there should be no extra spaces in the CQ code, please do not add spaces before or after any commas, as it will be recognized as part of a parameter or parameter value.)",
                 "parameters": {
                     "type": "object",
                     "required": ["groupid","userid"],
@@ -234,7 +234,7 @@ else:
                     "properties": {
                         "group": {
                             "type": "string",
-                            "description": "input groupid and return people in this group"
+                            "description": "input groupid and return people in this group,if you dont know the groupid,call getgroup"
                         },
                         "filter_target": {
                             "type": "string",
@@ -259,7 +259,7 @@ else:
                     "properties": {
                         "group": {
                             "type": "string",
-                            "description": "input groupid and return group info"
+                            "description": "input groupid and return group info,if you dont know the groupid,call getgroup"
                         }
                     }
                 }
@@ -505,7 +505,10 @@ def getgi(arguments: Dict[str, Any]):
     adm1 = arguments["group"]
     payl0 = {"group_id":adm1}
     ttip = tip + ":" + str(tport)
+    print("getgi:run")
+    
     response = asyncio.run(lower_send("get_group_info", payl0))
+    print(response)
     return response
 
 tool_map = {
@@ -533,7 +536,7 @@ def chat_stream(messages,input,qqg,sender,self_ids):
         # completion.
         while True:
             undone_tool_info = []
-        
+            print("while")
             completion : openai.Stream = client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -542,15 +545,19 @@ def chat_stream(messages,input,qqg,sender,self_ids):
                 tools=tool, 
                 max_tokens= None if maxtokens <= 0 else maxtokens,
                 stream=True,
+    #             extra_body={
+    #     "enable_search": True
+    # }
             ) 
             for chunk in completion:
+                print(chunk)
                 delta = chunk.choices[0].delta
                 if hasattr(delta, 'reasoning_content') and delta.reasoning_content is not None:
                     reasoning_content += delta.reasoning_content
                 else:
                     if delta.content is not None:
                         answer_content += delta.content
-                        print(delta.content,end="",flush=True)  # 流式输出回复内容
+                        # print(delta.content,end="",flush=True)  # 流式输出回复内容
                     
                     # 处理工具调用信息（支持并行工具调用）
                     if delta.tool_calls is not None:
@@ -597,7 +604,7 @@ def chat_stream(messages,input,qqg,sender,self_ids):
                                 tool_result = tool_function(tool_call_arguments)
                                 print("calling ", tool_call_name, " args:", tool_call_arguments, " result:", tool_result)
                                 messages.append({'role': 'assistant', 
-                                                'content': None, 
+                                                'content': answer_content, 
                                                 'tool_calls': [
                                                     {'id': n["id"], 
                                                     'function':{"name":n["name"],'arguments':n['arguments']}
@@ -610,7 +617,8 @@ def chat_stream(messages,input,qqg,sender,self_ids):
                                 "name": tool_call_name,
                                 "content": json.dumps(tool_result, ensure_ascii=False)  # 添加 ensure_ascii=False
                                 })            
- 
+                                print(messages)
+        print("ac:"+answer_content)
         assistant_message = answer_content
         messages.append({"role": "assistant", "content": assistant_message})
         return (answer_content,messages)
@@ -630,6 +638,9 @@ def chat(messages,input,qqg,sender,self_ids):
             temperature=0.3,
             tools=tool, 
             max_tokens= None if maxtokens <= 0 else maxtokens,
+    #         extra_body={
+    #     "enable_search": True
+    # }
         )
         choice = completion.choices[0]
         finish_reason = choice.finish_reason

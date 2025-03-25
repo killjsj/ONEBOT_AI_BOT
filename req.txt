@@ -16,6 +16,7 @@ Pillow
 torch
 tqdm
 bitsandbytes
+websockets
 fastapi
 uvicorn
 httpx
