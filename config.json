@@ -1,0 +1,59 @@
+{
+    "network": {
+        "ws":{
+            "enable": false,
+            "url": "ws://"
+        },
+        "http": {
+            "t": {
+                "ip": "http://127.0.0.1",
+                "port": "5700"
+            },
+            "f": {
+                "ip": "127.0.0.1",
+                "port": "5701"
+            }
+        }
+    },
+    "seq": 10,
+    "admin": [],
+    "sql": false,
+    "secert": {
+        "fht": "",
+        "aikey": "",
+        "local_model_login_token": ""
+    },
+    "maxtokens": "0",
+    "lang": "zh",
+    "allow_ai_draw": false,
+    "allow_ai_sound": false,
+    "local": {
+        "model": ""
+    },
+    "online": {
+        "aiurl": "",
+        "model": "",
+        "stream":true
+    },
+    "output_blacklist": [
+        "2854196310"
+    ],
+    "group": {
+        "0": {
+            "cx": true,
+            "ai": true,
+            "cx->mc": false,
+            "enableaiwelcome":true,
+            "mc_ip": "",
+            "sl_pb": [
+                "YyMi7aUL",
+                "Q6u5vvmP"
+            ],
+            "tdwf": {
+                "en": false,
+                "one2": 1,
+                "atwf": true
+            }
+        }
+    }
+}

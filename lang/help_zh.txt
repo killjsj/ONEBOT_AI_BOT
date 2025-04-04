@@ -1,0 +1,20 @@
+---bot help---
+-/config        -修改机器人
+--group         -修改群设置
+--- cx->mc      -将cx替换成mc/sl(切换)
+--- mcip        -修改检查的mc服务器ip 参数1: ip:port
+--- slpb        -修改检查的sl服务器pastebin 参数1或更多:  pastebin1 参数2: pastebin2 ...
+--- ai          -是否允许使用ai(切换)
+--- tdwf        -未完成
+--- welcome     -启用欢迎功能(使用ai令牌)
+--- seq         -更改此群组调用ai序列(30秒后重置)
+--aiurl         -更改OpenAI api地址(可私聊)
+--aikey         -更改OpenAI api密钥(可私聊)
+--model         -更改OpenAI api模型(可私聊)
+-/server 或 cx  -查询设置的服务器
+-/aisetting     -配置ai
+-/restart       -重启程序
+-/estop         -在10秒内停止调用AI功能
+--reset         -立刻重置ai记忆
+--0,1,2....     -修改ai提示词(提示词见lang\\prompt_{lang}.txt 更多请检查项目的readme)
+-直接@本机器人   -调用ai

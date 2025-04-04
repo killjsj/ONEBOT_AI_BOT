@@ -1,0 +1,12 @@
+python-dotenv
+openai>1.52.0
+regex
+requests
+numpy
+bs4
+pandas
+opencv-python
+websockets
+tqdm
+Pillow
+wakeonlan
