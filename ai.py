@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import base64
+import logging
 import os
 import queue
 import time
 import numpy as np
-from openai import OpenAI
+from openai import BadRequestError, OpenAI
 import json
 
 import openai
@@ -32,7 +33,6 @@ fport = config["network"]["http"]["f"]["port"]
 wurl = config["network"]["ws"]["url"]
 lang = config["lang"]
 model = config["online"]["model"]
-audio=config.get("allow_ai_sound", False)
 maxtokens = int(config["maxtokens"])
 wss = None
 async def lower_send(ENDPOINT,jsons) -> dict:
@@ -47,8 +47,8 @@ async def lower_send(ENDPOINT,jsons) -> dict:
         response = requests.post(ttip+"/"+ENDPOINT, json=jsons)
         return response.json()
 client = OpenAI(
-    api_key = aikey, 
-    base_url = url,
+    api_key=aikey,
+    base_url=url,  # Ensure this is the correct OpenAI API endpoint
 )
 
 if not(allow_draw):
@@ -627,19 +627,16 @@ def chat_stream(messages,input,qqg,sender,self_ids):
         return (answer_content,messages)
 # only test on Qwen Omni-Turbo!
 import soundfile as sf
-def chat_stream_sound(messages:list,input,qqg,sender,self_ids,picture:str = ""):
+def chat_stream_sound(messages:list,input,qqg,sender,self_ids,picture:List[dict] = []):
+        """overlook input when picture is not []"""
         global self_id
         self_id = self_ids
-        #compatible fix....
         messages.append({
                     "role": "user",
-                    "content": [{"type": "text", "text": input},{
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{picture}"},
-                    },]
-                    if picture != "" else 
+                    "content": picture if picture != "" or picture != None or picture != [] else 
                     [{"type": "text", "text": input}],
                 })
+        
         undone_tool_info = []
         reasoning_content = ""
         answer_content=  ""
@@ -649,20 +646,26 @@ def chat_stream_sound(messages:list,input,qqg,sender,self_ids,picture:str = ""):
         while True:
             undone_tool_info = []
             print("while")
-            completion : openai.Stream = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.3,
-                parallel_tool_calls=True,
-                tools=tool, 
-                max_tokens= None if maxtokens <= 0 else maxtokens,
-                stream=True,
-                modalities=["text", "audio"],
-                #             extra_body={
-                #     "enable_search": True
-                # }
-                audio={"voice": "Cherry", "format": "wav"},
-            ) 
+            try:
+                completion : openai.Stream = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=0.3,
+                    parallel_tool_calls=True,
+                    tools=tool, 
+                    max_tokens= None if maxtokens <= 0 else maxtokens,
+                    stream=True,
+                    modalities=["text", "audio"],
+                    #             extra_body={
+                    #     "enable_search": True
+                    # }
+                    audio={"voice": "Cherry", "format": "wav"},
+                ) 
+            except BadRequestError as e:
+                logging.exception(e)
+                answer_content = "Error: " + str(e) + "\ninput too long!"
+                messages.append({"role": "assistant", "content": answer_content})
+                break
             for chunk in completion:
                 delta = chunk.choices[0].delta
                 if hasattr(delta, 'reasoning_content') and delta.reasoning_content is not None:
@@ -748,6 +751,128 @@ def chat_stream_sound(messages:list,input,qqg,sender,self_ids,picture:str = ""):
         assistant_message = answer_content
         messages.append({"role": "assistant", "content": assistant_message})
         return (answer_content,messages)
+def chat_stream_image_infer(messages:list,input,qqg,sender,self_ids,picture:List[dict]):
+        """overlook input when picture is not []"""
+        print("while")
+        
+        global self_id
+        self_id = self_ids
+        messages.append({
+                    "role": "user",
+                    "content": picture if picture != [] else 
+                    [{"type": "text", "text": input}],
+                })
+        undone_tool_info = []
+        reasoning_content = ""
+        answer_content=  ""
+    # while finish_reason is None or finish_reason == "tool_calls":
+        # completion.
+        
+        audio_string = ""
+        while True:
+            undone_tool_info = []
+            try:
+                completion : openai.Stream = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    parallel_tool_calls=True,
+                    tools=tool, 
+                    max_tokens= None if maxtokens <= 0 else maxtokens,
+                    stream=True,
+                ) 
+                # completion : openai.Stream = client.chat.completions.create(
+                #     model=model,
+                #     messages=messages,
+                #     max_tokens=None if maxtokens <= 0 else maxtokens,
+                #     stream=True,
+                # ) 
+            except BadRequestError as e:
+                logging.exception(e)
+                answer_content = "Error: " + str(e) + "\npossable input too long!"
+                messages.append({"role": "assistant", "content": answer_content})
+                break
+            for chunk in completion:
+                delta = chunk.choices[0].delta
+                if hasattr(delta, 'reasoning_content') and delta.reasoning_content is not None:
+                    reasoning_content += delta.reasoning_content
+                else:
+                    if chunk.choices:
+                        if hasattr(delta, "audio"):
+                            try:
+                                audio_string += delta.audio["data"]
+                            except Exception as e:
+                                # print(delta.audio["transcript"])
+                                #内容
+                                answer_content += delta.audio["transcript"]
+                    if delta.content is not None:
+                        answer_content += delta.content
+                        
+                        
+                        # print(delta.content,end="",flush=True)  # 流式输出回复内容
+                    
+                    # 处理工具调用信息（支持并行工具调用）
+                    if delta.tool_calls is not None:
+                        for tool_call in delta.tool_calls:
+                            index = tool_call.index  # 工具调用索引，用于并行调用
+                                
+                                # 动态扩展工具信息存储列表
+                            while len(undone_tool_info) <= index:
+                                    undone_tool_info.append({})
+                                
+                                # 收集工具调用ID（用于后续函数调用）
+                            if tool_call.id:
+                                    undone_tool_info[index]['id'] = undone_tool_info[index].get('id', '') + tool_call.id
+                                
+                                # 收集函数名称（用于后续路由到具体函数）
+                            if tool_call.function and tool_call.function.name:
+                                    undone_tool_info[index]['name'] = undone_tool_info[index].get('name', '') + tool_call.function.name
+                                
+                                # 收集函数参数（JSON字符串格式，需要后续解析）
+                            if tool_call.function and tool_call.function.arguments:
+                                    undone_tool_info[index]['arguments'] = undone_tool_info[index].get('arguments', '') + tool_call.function.arguments
+            if undone_tool_info == []:
+                break
+            for n in undone_tool_info:
+                                tool_call_name = n['name']
+                                try:
+                                        if tool_call_name == "getgroup":
+                                            group.put(qqg, False)
+                                except queue.Full:
+                                        print("qqg full! skipping put")
+                                try:
+                                        if tool_call_name == "getsender":
+                                            # 确保发送者信息正确编码
+                                            if isinstance(sender, dict):
+                                                for key in ['nickname', 'card', 'title']:
+                                                    if key in sender and isinstance(sender[key], str):
+                                                        sender[key] = decode_unicode_escapes(sender[key])
+                                            send.put(sender, False)
+                                except queue.Full:
+                                        print("sender full! skipping put")
+                                    
+                                tool_call_arguments = json.loads(n["arguments"]) 
+                                tool_function = tool_map[tool_call_name] 
+                                tool_result = tool_function(tool_call_arguments)
+                                print("calling ", tool_call_name, " args:", tool_call_arguments, " result:", tool_result)
+                                messages.append({'role': 'assistant', 
+                                                'content': answer_content, 
+                                                'tool_calls': [
+                                                    {'id': n["id"], 
+                                                    'function':{"name":n["name"],'arguments':n['arguments']}
+                                                    }
+                                                    ]
+                                                })
+                                messages.append({
+                                "role": "tool",
+                                "tool_call_id": n["id"],
+                                "name": tool_call_name,
+                                "content": json.dumps(tool_result, ensure_ascii=False)  # 添加 ensure_ascii=False
+                                })            
+                                print(messages)
+        print("ac:"+answer_content)
+        assistant_message = answer_content
+        messages.append({"role": "assistant", "content": assistant_message})
+        return (answer_content,messages)
 
 def chat(messages,input,qqg,sender,self_ids):
     global self_id
@@ -758,16 +883,22 @@ def chat(messages,input,qqg,sender,self_ids):
 	})
     finish_reason = None
     while finish_reason is None or finish_reason == "tool_calls":
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0.3,
-            tools=tool, 
-            max_tokens= None if maxtokens <= 0 else maxtokens,
-    #         extra_body={
-    #     "enable_search": True
-    # }
-        )
+        try:
+            completion = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.3,
+                tools=tool, 
+                max_tokens= None if maxtokens <= 0 else maxtokens,
+        #         extra_body={
+        #     "enable_search": True
+        # }
+            )
+        except BadRequestError as e:
+                logging.exception(e)
+                answer_content = "Error: " + str(e) + "\npossable input too long!"
+                messages.append({"role": "assistant", "content": answer_content})
+                return (answer_content,messages)
         choice = completion.choices[0]
         finish_reason = choice.finish_reason
         if finish_reason == "tool_calls": 

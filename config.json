@@ -26,14 +26,13 @@
     "maxtokens": "0",
     "lang": "zh",
     "allow_ai_draw": false,
-    "allow_ai_sound": false,
     "local": {
         "model": ""
     },
     "online": {
         "aiurl": "",
         "model": "",
-        "stream":true
+        "model_mode":"image"
     },
     "output_blacklist": [
         "2854196310"
