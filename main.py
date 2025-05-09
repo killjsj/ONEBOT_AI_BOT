@@ -45,8 +45,19 @@ import builtins
 import importlib.util
 import logging
 oprint = builtins.print
+import inspect
+
 def cprint(*args, **kwargs):
-    oprint(f"<{datetime.now()}>:", *args, **kwargs)
+    # 获取调用栈
+    caller_frame = inspect.currentframe().f_back
+    # 获取调用者的模块名称
+    module_name = inspect.getmodule(caller_frame).__name__
+    # 获取调用者的文件名和行号
+    caller_file = caller_frame.f_code.co_filename
+    caller_line = caller_frame.f_lineno
+    
+    # 打印调用信息和原始消息
+    oprint(f"<{datetime.now()}>[{module_name}:{os.path.basename(caller_file)}:{caller_line}]:", *args, **kwargs)
 
 # from wakeonlan import send_magic_packet
 global rev_json
@@ -145,18 +156,20 @@ def import_plugin(plugin_name: str, plugin_path: str) -> ModuleType:
 reg_list = []
 rev_list = []
 rec_dict:dict[str,list[Callable]] = {}
-    
+plugin_instances = {}
 def register(plugin,f:str,mode:int = 0,command:str="") -> None:
     print(f"registing plugin class: {plugin.__name__}")
-    a = plugin(send_msg,lower_send,load_config)
-    reg_list.append(a)
+    if plugin not in plugin_instances:
+            plugin_instances[plugin] = plugin(send_msg, lower_send, load_config)
+            reg_list.append(plugin_instances[plugin])
+    instance = plugin_instances[plugin]
     if mode == 0:
         # 注册rev模式
         print(f"registing plugin rev")
         
-        if not hasattr(a, f):
+        if not hasattr(instance, f):
             raise Exception(f"plugin {plugin.__name__} not {f} function")
-        rev_list.append(getattr(a, f))
+        rev_list.append(getattr(instance, f))
     elif mode == 1:
         # 注册command模式
         print(f"registing plugin command: {command}")
@@ -164,9 +177,9 @@ def register(plugin,f:str,mode:int = 0,command:str="") -> None:
         if not hasattr(plugin, f):
             raise Exception(f"plugin {plugin.__name__} not {f} function")
         if rec_dict.get(command,[]) == []:
-            rec_dict[command] = [getattr(a, f)]
+            rec_dict[command] = [getattr(instance, f)]
         else:
-            rec_dict[command].append(getattr(a, f))
+            rec_dict[command].append(getattr(instance, f))
     
 
 def load_all_plugins() -> Union[Dict[str, Any], ModuleType]:

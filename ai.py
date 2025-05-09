@@ -22,6 +22,7 @@ def decode_unicode_escapes(s: str) -> str:
 
 with open('config.json','r+') as f:
     config:dict = json.load(f)
+ai_infer = config["online"]["infer"]
 aikey = config["secert"]["aikey"]
 allow_draw = config["allow_ai_draw"]
 url = config["online"]["aiurl"]
@@ -387,15 +388,25 @@ def cbu(burl,apik):
     global client
     if burl == "":
         burl = url
+        config["online"]["aiurl"] = url
+        
     if apik == "":
         apik = aikey
+        config["secert"]["aikey"] = apik
+        
     client = OpenAI(
         api_key = apik, 
         base_url = burl,
     )
+    with open('config.json','w+') as f:
+                                            json.dump(config,f,indent=4)     
 def cam(modeln):
     global model
     model = modeln
+    config["online"]["model"] = modeln
+    
+    with open('config.json','w+') as f:
+                                            json.dump(config,f,indent=4)     
 self_id = "0"
 group = queue.Queue(maxsize=3)
 send = queue.Queue(maxsize=3)
@@ -532,6 +543,9 @@ def chat_stream(messages,input,qqg,sender,self_ids):
             "role": "user",
             "content": input,	
         })
+        with open('config.json','r+') as f:
+            config:dict = json.load(f)
+        ai_infer = config["online"]["infer"]
         undone_tool_info = []
         reasoning_content = ""
         answer_content=  ""
@@ -551,6 +565,7 @@ def chat_stream(messages,input,qqg,sender,self_ids):
     #             extra_body={
     #     "enable_search": True
     # }
+                extra_body={"enable_thinking": ai_infer},
             ) 
             for chunk in completion:
                 print(chunk)
@@ -637,6 +652,19 @@ def chat_stream_sound(messages:list,input,qqg,sender,self_ids,picture:List[dict]
                     [{"type": "text", "text": input}],
                 })
         
+        if len(messages) >= 2 and messages[0]["role"] == "system":
+            # 把system提到user消息列表最前面
+            if isinstance(messages[1]["content"], list):
+                messages[1]["content"].insert(0, {"type": "text", "text": messages[0]["content"]})
+            else:
+                # 处理普通文本消息
+                messages[1]["content"] = [
+                    {"type": "text", "text": messages[0]["content"]},
+                    {"type": "text", "text": messages[1]["content"]}
+                ]
+            # 删除原始system消息
+            messages.pop(0)
+        # print(messages)
         undone_tool_info = []
         reasoning_content = ""
         answer_content=  ""
@@ -659,6 +687,8 @@ def chat_stream_sound(messages:list,input,qqg,sender,self_ids,picture:List[dict]
                     #             extra_body={
                     #     "enable_search": True
                     # }
+                    # extra_body={"enable_thinking": ai_infer},
+                    
                     audio={"voice": "Cherry", "format": "wav"},
                 ) 
             except BadRequestError as e:
@@ -759,7 +789,7 @@ def chat_stream_image_infer(messages:list,input,qqg,sender,self_ids,picture:List
         self_id = self_ids
         messages.append({
                     "role": "user",
-                    "content": picture if picture != [] else 
+                    "content": picture if picture != "" or picture != None or picture != [] else 
                     [{"type": "text", "text": input}],
                 })
         undone_tool_info = []
@@ -767,7 +797,9 @@ def chat_stream_image_infer(messages:list,input,qqg,sender,self_ids,picture:List
         answer_content=  ""
     # while finish_reason is None or finish_reason == "tool_calls":
         # completion.
-        
+        with open('config.json','r+') as f:
+            config:dict = json.load(f)
+        ai_infer = config["online"]["infer"]
         audio_string = ""
         while True:
             undone_tool_info = []
@@ -779,6 +811,8 @@ def chat_stream_image_infer(messages:list,input,qqg,sender,self_ids,picture:List
                     tools=tool, 
                     max_tokens= None if maxtokens <= 0 else maxtokens,
                     stream=True,
+                    extra_body={"enable_thinking": ai_infer},
+                    
                 ) 
                 # completion : openai.Stream = client.chat.completions.create(
                 #     model=model,
@@ -881,6 +915,9 @@ def chat(messages,input,qqg,sender,self_ids):
 		"role": "user",
 		"content": input,	
 	})
+    with open('config.json','r+') as f:
+            config:dict = json.load(f)
+    ai_infer = config["online"]["infer"]
     finish_reason = None
     while finish_reason is None or finish_reason == "tool_calls":
         try:
@@ -890,6 +927,7 @@ def chat(messages,input,qqg,sender,self_ids):
                 temperature=0.3,
                 tools=tool, 
                 max_tokens= None if maxtokens <= 0 else maxtokens,
+                extra_body={"enable_thinking": ai_infer},
         #         extra_body={
         #     "enable_search": True
         # }

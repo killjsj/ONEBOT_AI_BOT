@@ -136,8 +136,7 @@ class qserverPlugin():
                                             print(str(rev['user_id'])+" is changing seq -> "+str(command[2]))
                                             send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK seq(global) -> " + str(config["seq"])})                                          
 
-                                        with open('config.json','w+') as f:
-                                            json.dump(config,f,indent=4)              
+                                                 
                                     elif command[0] == "aiurl":
                                         ai.cbu(command[1],"")
                                         print(str(rev['user_id'])+" is changing ai url-> "+command[1])
@@ -151,7 +150,18 @@ class qserverPlugin():
                                         ai.cam(command[1])
                                         print(str(rev['user_id'])+" is changing model -> "+command[1])
                                         send_msg({'msg_type':'group','number':qqg,'msg':"200 OK MODEL CHANGED-> "+command[1]})
-                                
+                                    elif command[0] == "mode":
+                                        config["online"]["model_mode"] = command[1]
+                                        with open('config.json','w+') as f:
+                                            json.dump(config,f,indent=4)     
+                                        print(str(rev['user_id'])+" is changing mode -> "+command[1])
+                                        send_msg({'msg_type':'group','number':qqg,'msg':"200 OK MODE CHANGED-> "+command[1]})
+                                    if command[1] == "ai_infer":
+                                                config["online"]["infer"] = not(config["group"][str(qqg)]["enableaiwelcome"])
+                                                print(str(rev['user_id'])+" is changing infer -> "+str(config["online"]["infer"]))
+                                                send_msg({'msg_type':"group",'number':qqg,'msg':"200 OK ai infer ->" + str(config["online"]["infer"])})
+        with open('config.json','w+') as f:
+                                            json.dump(config,f,indent=4)                      
     def run_c_a(self,rev, command: list):
         """
         Run the plugin.

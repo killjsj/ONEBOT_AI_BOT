@@ -16,13 +16,25 @@ config = {}
 sp = False
 atted = False
 uset = 0
+def read_last_prompt(file_from):
+    with open(file_from, 'r', encoding='utf-8') as file:
+        content = file.read()
+        last_prompt_index = content.rfind('```',0,len(content[:-3]))
+        if last_prompt_index == -1:
+            raise TypeError('No prompt found in the file')
+        last_prompt = content[last_prompt_index:]
+        match = re.search(r'```(\d+)', last_prompt)
+        if not match:
+            raise TypeError('No valid prompt number found in the last prompt')
+        last_prompt_number = match.group(1)
+        return last_prompt_number
 def permc(id,permneed,qqg):
     global config
     
     with open('config.json','r+') as f:
         config = json.load(f)
     if permneed == "admin":
-        if id in config["admin"]:
+        if str(id) in config["admin"]:
             return True
         else:return False
     if permneed == "ai":
@@ -95,16 +107,19 @@ class qserverPlugin():
         config = load_config()
         self.lang = config["lang"]
         self.mode = 0
+        self.messages = {}
         self.model_mode = config["online"]["model_mode"]
         self.langprom = os.path.join('lang', f'prompt_{self.lang}.txt')
         # Add any instance initialization code here
     seq = {}
-    messages = {}
     def runchat(self,i,qqg,input,sender,self_id,me:str):
                                     """
                                     me:only used for audio,image
                                     """
-                                    global messages,seq
+                                    global seq
+                                    with open('config.json','r+') as f:
+                                            config:dict = json.load(f)
+                                    self.model_mode = config["online"]["model_mode"]
                                     ng = str(qqg)
                                     if ng not in self.seq:
                                         self.seq[ng] = 1
@@ -118,9 +133,11 @@ class qserverPlugin():
                                     if self.seq[ng] > int(config["seq"]):
                                         self.send_msg({'msg_type':'group','number':qqg,'msg':"429 Too Many Requests"})
                                         return
+                                    # print(self.messages)
                                     if ng not in self.messages:
                                         self.messages[ng] = [{"role": "system", "content": self.readprompt(self.langprom,self.mode)}]
                                     if self.model_mode == "audio":
+                                        
                                         response,self.messages[str(qqg)] = ai.chat_stream_sound(self.messages.get(str(qqg),[]),input,qqg,sender,str(self_id),me)
                                         response_audio = f"[CQ:record,file=file://"+os.path.abspath("audio_assistant_temp.wav")+"]"
                                         outp = user+response
@@ -128,6 +145,8 @@ class qserverPlugin():
                                         self.send_msg({'msg_type':'group','number':qqg,'msg':outp})
                                         # print(messages[str(qqg)])
                                     elif self.model_mode == "image":
+                                        ai_infer = config["online"]["infer"]
+                                        if (ai_infer):{send_msg({'msg_type':'group','number':qqg,'msg':"200 OK THINKING PLS WAIT"})}
                                         response,self.messages[str(qqg)] = ai.chat_stream_image_infer(self.messages.get(str(qqg),[]),input,qqg,sender,str(self_id),me)
                                         outp = user+response
                                         for a in config["output_blacklist"]:
@@ -135,6 +154,9 @@ class qserverPlugin():
                                                     outp = outp.replace(a,"filtered")   
                                         self.send_msg({'msg_type':'group','number':qqg,'msg':outp})
                                     elif self.model_mode == "stream":
+                                            ai_infer = config["online"]["infer"]
+                                            if (ai_infer):{send_msg({'msg_type':'group','number':qqg,'msg':"200 OK THINKING PLS WAIT"})}
+                                            
                                             response,self.messages[str(qqg)] = ai.chat_stream(self.messages.get(str(qqg),[]),input,qqg,sender,str(self_id))
                                             outp = user+response
                                             for a in config["output_blacklist"]:
@@ -142,6 +164,9 @@ class qserverPlugin():
                                                     outp = outp.replace(a,"filtered")
                                             self.send_msg({'msg_type':'group','number':qqg,'msg':outp})
                                     else:
+                                            ai_infer = config["online"]["infer"]
+                                            if (ai_infer):{send_msg({'msg_type':'group','number':qqg,'msg':"200 OK THINKING PLS WAIT"})}
+                                            
                                             response,self.messages[str(qqg)] = ai.chat(self.messages.get(str(qqg)),input,qqg,sender,str(self_id))
                                             outp = user+response
                                             for a in config["output_blacklist"]:
@@ -200,6 +225,7 @@ class qserverPlugin():
             return
         qqg = rev['group_id']
         user = str(rev['user_id'])
+        la=read_last_prompt(self.langprom)
         
         if ('/aisetting' in rev['raw_message'].lower()):
                                         attext = rev['raw_message']
@@ -224,7 +250,7 @@ class qserverPlugin():
                                                     print(f"mode change in group:{qqg} by:"+user)
                                                 else:
                                                     send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable"})
-                                                    print("prompt:"+comm[1]+" 406 Not Acceptable")
+                                                    print(f"prompt {comm[1]} 406 Not Acceptable")
                                             except ValueError:
                                                 send_msg({'msg_type':'group','number':qqg,'msg':"406 Not Acceptable,string not acceptable"})  
                                                 print("ValueError")     
@@ -262,7 +288,6 @@ class qserverPlugin():
                                 attext = rev.get("raw_message")
                                 self_id = str(rev.get('self_id',0))
                                 rm = rev.get('message')
-                                sender = rev['sender']
                                 if rev.get('notice_type') == "group_increase":
                                     if str(qqg) in config["group"]:
                                         if config["group"][str(qqg)]["enableaiwelcome"]:
@@ -298,10 +323,26 @@ class qserverPlugin():
                                                         if item.get('type') == 'image':
                                                             image_name = item['data']['file']
                                                             def image_to_base64(image):
-                                                                byte_data = BytesIO()# 创建一个字节流管道
-                                                                image.save(byte_data, format="JPEG")# 将图片数据存入字节流管道
-                                                                byte_data = byte_data.getvalue()# 从字节流管道中获取二进制
-                                                                base64_str = base64.b64encode(byte_data).decode("ascii")# 二进制转base64
+                                                                # 创建一个字节流管道
+                                                                byte_data = BytesIO()
+                                                                
+                                                                # 转换RGBA为RGB
+                                                                if image.mode == 'RGBA':
+                                                                    # 创建白色背景
+                                                                    background = PIL.Image.new('RGB', image.size, (255, 255, 255))
+                                                                    # 将图片贴到白色背景上
+                                                                    background.paste(image, mask=image.split()[3])  # 使用alpha通道作为mask
+                                                                    image = background
+                                                                elif image.mode != 'RGB':
+                                                                    # 转换其他格式为RGB
+                                                                    image = image.convert('RGB')
+                                                                    
+                                                                # 将图片数据存入字节流管道
+                                                                image.save(byte_data, format="JPEG", quality=95)
+                                                                # 从字节流管道中获取二进制
+                                                                byte_data = byte_data.getvalue()
+                                                                # 二进制转base64
+                                                                base64_str = base64.b64encode(byte_data).decode("ascii")
                                                                 return base64_str
                                                             result = asyncio.run(self.lower_send("get_image",{"file_id":image_name}))
                                                             image = PIL.Image.open(result["data"]["file"])
@@ -311,9 +352,8 @@ class qserverPlugin():
                                                                 "image_url": {"url": f"data:image/png;base64,{image}"},
                                                             })
                                                     break
-                                        
-                                        print(AI_message_list)
                                 if atted and permc(qqg,"ai",qqg)and not rev.get('post_type','message') == "message_sent" and not sp:
+                                    sender = rev['sender']
                                     uset = uset+1
                                     attext = attext.strip()
                                     attext = process_message(rev)

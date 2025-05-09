@@ -2,6 +2,7 @@
 using ONEBOT V11   
 using MC-Server-Info(https://github.com/Spark-Code-China/MC-Server-Info/)  
 using hires-fix(https://github.com/xinntao/Real-ESRGAN)  
+now im sure i will use bailian.console.aliyun.com s model
 # ---- How to use ---  
 run:git clone https://github.com/1qa2ws3ed4rf1/SL_QQ_BOT.git  
 open .env and goto '.env' part [click here](##-.env:)  
@@ -10,7 +11,7 @@ run:python main.py
 startuping  
 ## commands:  
 `cx` or `/server`:get servers online players(btw cx means '查询',inquire in chinese) can config to get mc server:)
-`/ai `:run ai chat  
+`@bot `:run ai chat  
 `/config `:config this
 # config:  
 ## config.json:
@@ -155,5 +156,4 @@ paste this in to '"servers": []'
 ```
 like be:![a](image-6.png)  
   
-todo:tdwf  
 <div hidden>nerver gonna give you up</div>  

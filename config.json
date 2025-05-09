@@ -32,7 +32,8 @@
     "online": {
         "aiurl": "",
         "model": "",
-        "model_mode":"image"
+        "model_mode":"image",
+        "infer":false
     },
     "output_blacklist": [
         "2854196310"
